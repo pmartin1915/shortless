@@ -1,0 +1,50 @@
+/*
+ * Shortless - YouTube Shorts Hiding (Layer 2: CSS Injection)
+ * Injected before first paint to prevent Shorts content from flickering.
+ */
+
+/* Reel shelf on home / search pages */
+ytd-reel-shelf-renderer {
+  display: none !important;
+}
+
+/* Rich shelf marked as Shorts (home page) */
+ytd-rich-shelf-renderer[is-shorts] {
+  display: none !important;
+}
+
+/* "Shorts" entry in the left sidebar guide */
+ytd-guide-entry-renderer a[title="Shorts"],
+ytd-guide-entry-renderer:has(a[title="Shorts"]) {
+  display: none !important;
+}
+
+/* "Shorts" entry in the mini (collapsed) sidebar */
+ytd-mini-guide-entry-renderer[aria-label="Shorts"] {
+  display: none !important;
+}
+
+/* "Shorts" tab on channel pages */
+yt-tab-shape[tab-title="Shorts"] {
+  display: none !important;
+}
+
+/* "Shorts" chip in chip-cloud filters (e.g. home page filter bar) */
+yt-chip-cloud-chip-renderer:has(yt-formatted-string[title="Shorts"]) {
+  display: none !important;
+}
+
+/* Shorts overlay badge on video thumbnails */
+[overlay-style="SHORTS"] {
+  display: none !important;
+}
+
+/* Shorts shelf items rendered inside grid containers */
+ytd-grid-video-renderer:has([overlay-style="SHORTS"]) {
+  display: none !important;
+}
+
+/* Shorts entries in search results */
+ytd-video-renderer:has([overlay-style="SHORTS"]) {
+  display: none !important;
+}

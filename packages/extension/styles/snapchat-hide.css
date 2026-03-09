@@ -1,0 +1,14 @@
+/*
+ * Shortless - Snapchat Spotlight Hiding (Layer 2: CSS Injection)
+ * Injected before first paint to prevent Spotlight content from flickering.
+ */
+
+/* Spotlight navigation links */
+a[href^="/spotlight"] {
+  display: none !important;
+}
+
+/* Spotlight tab (data-testid variant) */
+[data-testid="spotlight-tab"] {
+  display: none !important;
+}

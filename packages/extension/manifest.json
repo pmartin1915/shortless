@@ -1,0 +1,85 @@
+{
+  "manifest_version": 3,
+  "name": "Shortless — Block Short-Form Content",
+  "version": "1.0.0",
+  "description": "Block Reels, Shorts & Spotlight. Keep everything else.",
+  "permissions": [
+    "declarativeNetRequest",
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "*://*.instagram.com/*",
+    "*://*.tiktok.com/*",
+    "*://*.musical.ly/*",
+    "*://*.snapchat.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "youtube_rules",
+        "enabled": true,
+        "path": "filters/youtube-rules.json"
+      },
+      {
+        "id": "instagram_rules",
+        "enabled": true,
+        "path": "filters/instagram-rules.json"
+      },
+      {
+        "id": "tiktok_rules",
+        "enabled": true,
+        "path": "filters/tiktok-rules.json"
+      },
+      {
+        "id": "snapchat_rules",
+        "enabled": true,
+        "path": "filters/snapchat-rules.json"
+      }
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "css": ["styles/youtube-hide.css"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://*.instagram.com/*"],
+      "css": ["styles/instagram-hide.css"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://*.snapchat.com/*"],
+      "css": ["styles/snapchat-hide.css"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "js": ["content-scripts/common.js", "content-scripts/youtube.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://*.instagram.com/*"],
+      "js": ["content-scripts/common.js", "content-scripts/instagram.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

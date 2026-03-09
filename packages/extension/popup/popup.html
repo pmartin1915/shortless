@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=320">
+  <title>Shortless</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="title-row">
+        <h1 class="title">Shortless</h1>
+        <span class="version">v1.0</span>
+      </div>
+      <p class="tagline">Block the Scroll. Keep the Content.</p>
+    </header>
+
+    <main class="platforms">
+      <div class="platform-card" data-platform="youtube">
+        <span class="platform-name">YouTube</span>
+        <label class="toggle">
+          <input type="checkbox" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="platform-card" data-platform="instagram">
+        <span class="platform-name">Instagram</span>
+        <label class="toggle">
+          <input type="checkbox" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="platform-card" data-platform="tiktok">
+        <span class="platform-name">TikTok</span>
+        <label class="toggle">
+          <input type="checkbox" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="platform-card" data-platform="snapchat">
+        <span class="platform-name">Snapchat</span>
+        <label class="toggle">
+          <input type="checkbox" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <p class="block-count">Focus time protected: <strong id="block-count">0</strong> blocks today</p>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
