@@ -3,6 +3,12 @@
   "name": "Shortless — Block Short-Form Content",
   "version": "1.0.0",
   "description": "Block Reels, Shorts & Spotlight. Keep everything else.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "shortless@pmartin1915.dev",
+      "strict_min_version": "128.0"
+    }
+  },
   "permissions": [
     "declarativeNetRequest",
     "storage"
@@ -15,7 +21,7 @@
     "*://*.snapchat.com/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "scripts": ["background.js"]
   },
   "action": {
     "default_popup": "popup/popup.html",

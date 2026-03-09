@@ -18,6 +18,11 @@ dist/
 build/
 *.zip
 
+# Test
+test-profile-*/
+test-results/
+playwright-report/
+
 # Env
 .env
 .env.local

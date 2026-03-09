@@ -1,0 +1,37 @@
+/*
+ * Shortless - Instagram Reels Hiding (Layer 2: CSS Injection)
+ * Injected before first paint to prevent Reels content from flickering.
+ */
+
+/* Reels navigation link */
+a[href="/reels/"] {
+  display: none !important;
+}
+
+/* Any link beginning with /reels/ */
+a[href^="/reels/"] {
+  display: none !important;
+}
+
+/* Reels icon in navigation */
+svg[aria-label="Reels"] {
+  display: none !important;
+}
+
+/* Reels tab (data-testid variant) */
+[data-testid="reels-tab"] {
+  display: none !important;
+}
+
+/* Feed posts that contain a reel link */
+article:has(a[href*="/reel/"]) {
+  display: none !important;
+}
+
+/* Hide parent list items that wrap a Reels nav link to avoid empty gaps */
+li:has(> a[href="/reels/"]),
+li:has(> a[href^="/reels/"]),
+[role="listitem"]:has(> a[href="/reels/"]),
+[role="listitem"]:has(> a[href^="/reels/"]) {
+  display: none !important;
+}

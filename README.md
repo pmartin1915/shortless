@@ -1,10 +1,8 @@
-# FOCUS
+# Shortless
 
 > **Block the Scroll. Keep the Content.**
 
 Cross-platform tool that surgically blocks short-form addictive content (YouTube Shorts, Instagram Reels, TikTok, Snapchat Spotlight) while preserving normal app functionality.
-
-⚠️ **Naming Note:** "FOCUS" is a working title. There is an existing Chrome/Firefox extension called "Focus — Remove Shorts & Reels." We need to rename before publishing. See `docs/NAMING.md`.
 
 ---
 
@@ -12,62 +10,55 @@ Cross-platform tool that surgically blocks short-form addictive content (YouTube
 
 | Platform | Mechanism | Blocking Level |
 |---|---|---|
-| **Chrome / Edge / Firefox** | `declarativeNetRequest` + content scripts | ✅ Surgical (URL path + DOM) |
-| **Safari (iOS + macOS)** | Safari Web Extension | ✅ Surgical (URL path + DOM) |
-| **Android native apps** | AccessibilityService + overlay | ✅ Feature-level (UI detection) |
-| **iOS native apps** | FamilyControls / ManagedSettings | ⚠️ App-level only (Apple limitation) |
+| **Chrome / Edge** | `declarativeNetRequest` + CSS injection + content scripts | ✅ Surgical (3-layer defense) |
+| **Safari (iOS + macOS)** | Safari Web Extension | 🔲 Planned |
+| **Firefox** | MV3 port | 🔲 Planned |
+| **Android native apps** | AccessibilityService + overlay | 🔲 Planned |
+| **iOS native apps** | FamilyControls / ManagedSettings | 🔲 Planned |
 | **TikTok (all)** | Full domain block | ✅ Complete (100% short-form) |
 
 ## Architecture
 
+The browser extension uses a **3-layer defense system**:
+
+- **L1 — `declarativeNetRequest`:** 4 per-platform rulesets that block/redirect at the network level (e.g. `/shorts/{id}` redirected to `/watch?v={id}`)
+- **L2 — CSS injection:** Injected at `document_start` to hide short-form UI elements before they render (prevents flash-of-blocked-content)
+- **L3 — `MutationObserver` content scripts:** Catches SPA navigations and dynamically injected content that bypass L1 and L2
+
 ```
 packages/
-├── shared/              # Shared filter rules + types
-│   ├── filter-rules.json
-│   ├── platforms.ts
-│   └── types.ts
-├── extension/           # Browser extension (Chrome, Firefox, Safari)
-│   ├── manifest.json
-│   ├── background.js
-│   ├── popup/
-│   ├── content-scripts/
-│   │   ├── youtube.js
-│   │   ├── instagram.js
-│   │   └── common.js
-│   ├── filters/
-│   │   └── filter-list.json
-│   └── icons/
-├── android/             # React Native + Kotlin AccessibilityService
-│   ├── App.tsx
-│   ├── src/
-│   └── android/app/src/main/java/com/focus/
-│       ├── FocusAccessibilityService.kt
-│       ├── OverlayManager.kt
-│       ├── RuleEngine.kt
-│       └── AccessibilityModule.kt
-└── ios/                 # Swift FamilyControls + Safari Extension
-    ├── Focus/
-    └── SafariExtension/
+└── extension/           # Chrome extension (Manifest V3)
+    ├── manifest.json
+    ├── background.js
+    ├── popup/
+    ├── content-scripts/
+    │   ├── youtube.js
+    │   ├── instagram.js
+    │   ├── snapchat.js
+    │   └── common.js
+    ├── filters/         # DNR rulesets (one per platform)
+    ├── styles/          # CSS injection stylesheets
+    └── icons/
 ```
 
 ## Development Roadmap
 
 | Phase | Deliverable | Status |
 |---|---|---|
-| 0 | DevTools research (map URLs + DOM selectors) | 🔲 Not started |
-| 1 | Chrome extension MVP | 🔲 Not started |
-| 1.1 | Safari extension port | 🔲 Not started |
-| 1.2 | Firefox MV3 port | 🔲 Not started |
+| 0 | DevTools research (map URLs + DOM selectors) | ✅ Complete |
+| 1 | Chrome extension MVP | ✅ Complete |
+| 1.1 | Firefox MV3 port | 🔧 In progress |
+| 1.2 | Safari extension port | 🔲 Not started |
 | 2 | Android Accessibility MVP | 🔲 Not started |
 | 3 | Pro features (scheduler, custom rules, passcode) | 🔲 Not started |
 | 4 | iOS app (FamilyControls + Safari bundle) | 🔲 Not started |
 
-## Quick Start (Extension Development)
+## Quick Start
 
 ```bash
 # Clone the repo
-git clone https://github.com/pmartin1915/focus.git
-cd focus
+git clone https://github.com/pmartin1915/shortless.git
+cd shortless
 
 # Load in Chrome
 # 1. Open chrome://extensions/
@@ -78,8 +69,8 @@ cd focus
 
 ## Key Design Decisions
 
-**Why two layers in the browser extension?**
-Short-form content is embedded via JavaScript after page load. A network block alone misses SPA navigations. A DOM script alone misses API calls. Both layers together = full coverage.
+**Why three layers in the browser extension?**
+Short-form content is embedded via JavaScript after page load. L1 (network-level DNR rules) catches requests before they complete, but misses SPA navigations. L2 (CSS injection at `document_start`) hides UI elements instantly so users never see a flash of blocked content. L3 (`MutationObserver` content scripts) catches anything that slips through — dynamically injected elements, SPA route changes, and platform-specific edge cases. All three layers together = full coverage with zero visual flicker.
 
 **Why AccessibilityService on Android (not VPN)?**
 HTTPS encryption + certificate pinning means a VPN can only see hostnames, not URL paths. We can block `i.instagram.com` entirely, but not `/reels/*` specifically. The Accessibility API reads the UI tree instead — a fundamentally different approach.
@@ -93,10 +84,6 @@ iOS sandboxing prevents any app from inspecting another app's UI. FamilyControls
 - All blocking happens on-device
 - No analytics (unless explicitly added and disclosed)
 - Open source filter rules
-
-## Contributing
-
-Filter list contributions welcome! See `docs/FILTER_MAINTENANCE.md`.
 
 ## License
 
