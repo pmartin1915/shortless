@@ -18,18 +18,19 @@
   }
 
   // ---- Selectors (mirrors youtube-hide.css, plus dynamic overlay) -----------
+  // All selectors use href/attribute-based matching for i18n safety.
   var SHORTS_SELECTORS = [
     'ytd-reel-shelf-renderer',
     'ytd-rich-shelf-renderer[is-shorts]',
-    'ytd-guide-entry-renderer a[title="Shorts"]',
-    'ytd-guide-entry-renderer:has(a[title="Shorts"])',
-    'ytd-mini-guide-entry-renderer[aria-label="Shorts"]',
+    'ytd-guide-entry-renderer:has(a[href="/shorts"])',
+    'ytd-mini-guide-entry-renderer:has(a[href="/shorts"])',
     'yt-tab-shape[tab-title="Shorts"]',
-    'yt-chip-cloud-chip-renderer:has(yt-formatted-string[title="Shorts"])',
+    'yt-tab-shape:has(a[href*="/shorts"])',
     '[overlay-style="SHORTS"]',
     'ytd-grid-video-renderer:has([overlay-style="SHORTS"])',
     'ytd-video-renderer:has([overlay-style="SHORTS"])'
   ];
+  // Note: chip-cloud chips lack href/data attrs. Handled by hideChipsByText() below.
 
   // ---- Helpers --------------------------------------------------------------
 
@@ -56,10 +57,34 @@
   }
 
   /**
+   * Hide "Shorts" chip-cloud chips by checking text content.
+   * This handles all locales since chip text is the only distinguishing feature.
+   * YouTube uses "Shorts" as the chip label across most locales.
+   *
+   * @returns {number} Count of newly hidden chips.
+   */
+  function hideChipsByText() {
+    var count = 0;
+    var chips = document.querySelectorAll(
+      'yt-chip-cloud-chip-renderer:not([data-shortless-hidden])'
+    );
+    for (var i = 0; i < chips.length; i++) {
+      var text = (chips[i].textContent || '').trim();
+      if (text === 'Shorts') {
+        chips[i].style.setProperty('display', 'none', 'important');
+        chips[i].setAttribute('data-shortless-hidden', '');
+        count++;
+      }
+    }
+    return count;
+  }
+
+  /**
    * Run the hide pass and report any newly hidden elements.
    */
   function hideAndReport() {
     var count = S.hideElements(SHORTS_SELECTORS);
+    count += hideChipsByText();
     S.sendBlockCount(count);
   }
 
@@ -73,7 +98,20 @@
 
   // ---- Initialisation -------------------------------------------------------
 
+  /**
+   * Dispatch toggle state to the MAIN-world fetch guard script.
+   * @param {boolean} state
+   */
+  function dispatchToggleState(state) {
+    document.dispatchEvent(new CustomEvent('shortless-youtube-state', {
+      detail: { enabled: state }
+    }));
+  }
+
   S.isPlatformEnabled('youtube').then(function (enabled) {
+    // Inform the fetch guard of the current toggle state.
+    dispatchToggleState(enabled);
+
     if (!enabled) return;
 
     // Immediate redirect check
@@ -89,4 +127,13 @@
     // Observe DOM mutations for lazily-loaded Shorts content
     S.createObserver(hideAndReport);
   });
+
+  // Re-dispatch toggle state when the user changes it via the popup.
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+    chrome.storage.onChanged.addListener(function (changes) {
+      if (changes.youtube) {
+        dispatchToggleState(changes.youtube.newValue);
+      }
+    });
+  }
 })();

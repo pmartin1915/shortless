@@ -5,16 +5,16 @@
 export const YOUTUBE_SHORTS_SELECTORS = [
   'ytd-reel-shelf-renderer',
   'ytd-rich-shelf-renderer[is-shorts]',
-  'ytd-guide-entry-renderer:has(a[title="Shorts"])',
-  'ytd-mini-guide-entry-renderer[aria-label="Shorts"]',
+  'ytd-guide-entry-renderer:has(a[href="/shorts"])',
+  'ytd-mini-guide-entry-renderer:has(a[href="/shorts"])',
   'yt-tab-shape[tab-title="Shorts"]',
+  'yt-tab-shape:has(a[href*="/shorts"])',
   '[overlay-style="SHORTS"]',
 ];
 
 export const INSTAGRAM_REELS_SELECTORS = [
   'a[href="/reels/"]',
   'a[href^="/reels/"]',
-  'svg[aria-label="Reels"]',
   '[data-testid="reels-tab"]',
 ];
 

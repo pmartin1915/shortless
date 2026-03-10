@@ -13,11 +13,6 @@ a[href^="/reels/"] {
   display: none !important;
 }
 
-/* Reels icon in navigation */
-svg[aria-label="Reels"] {
-  display: none !important;
-}
-
 /* Reels tab (data-testid variant) */
 [data-testid="reels-tab"] {
   display: none !important;

@@ -19,10 +19,10 @@
   }
 
   // ---- Selectors (mirrors instagram-hide.css, plus menu-item variant) -------
+  // All selectors use href/attribute-based matching for i18n safety.
   var REELS_SELECTORS = [
     'a[href="/reels/"]',
     'a[href^="/reels/"]',
-    'svg[aria-label="Reels"]',
     '[data-testid="reels-tab"]',
     'article:has(a[href*="/reel/"])',
     'div[role="menuitem"]:has(a[href^="/reels/"])'

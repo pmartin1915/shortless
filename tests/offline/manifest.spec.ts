@@ -57,13 +57,31 @@ test.describe('Manifest validation', () => {
     }
   });
 
-  test('JS content scripts run at document_idle', () => {
+  test('JS content scripts run at correct timing', () => {
     const jsScripts = manifest.content_scripts.filter(
       (cs: any) => cs.js?.length > 0
     );
     for (const cs of jsScripts) {
-      expect(cs.run_at).toBe('document_idle');
+      if (cs.world === 'MAIN') {
+        // MAIN world scripts (e.g. fetch guard) must run before page JS
+        expect(cs.run_at).toBe('document_start');
+      } else {
+        expect(cs.run_at).toBe('document_idle');
+      }
     }
+  });
+
+  test('declares MAIN world fetch guard for YouTube', () => {
+    const mainWorldScripts = manifest.content_scripts.filter(
+      (cs: any) => cs.world === 'MAIN'
+    );
+    expect(mainWorldScripts.length).toBeGreaterThanOrEqual(1);
+    const ytGuard = mainWorldScripts.find((cs: any) =>
+      cs.js?.includes('content-scripts/youtube-fetch-guard.js')
+    );
+    expect(ytGuard).toBeDefined();
+    expect(ytGuard.run_at).toBe('document_start');
+    expect(ytGuard.matches).toContain('*://*.youtube.com/*');
   });
 
   test('all referenced files exist on disk', () => {

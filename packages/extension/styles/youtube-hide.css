@@ -13,26 +13,24 @@ ytd-rich-shelf-renderer[is-shorts] {
   display: none !important;
 }
 
-/* "Shorts" entry in the left sidebar guide */
-ytd-guide-entry-renderer a[title="Shorts"],
-ytd-guide-entry-renderer:has(a[title="Shorts"]) {
+/* "Shorts" entry in the left sidebar guide (href-based, i18n-safe) */
+ytd-guide-entry-renderer:has(a[href="/shorts"]) {
   display: none !important;
 }
 
-/* "Shorts" entry in the mini (collapsed) sidebar */
-ytd-mini-guide-entry-renderer[aria-label="Shorts"] {
+/* "Shorts" entry in the mini (collapsed) sidebar (href-based, i18n-safe) */
+ytd-mini-guide-entry-renderer:has(a[href="/shorts"]) {
   display: none !important;
 }
 
-/* "Shorts" tab on channel pages */
-yt-tab-shape[tab-title="Shorts"] {
+/* "Shorts" tab on channel pages (dual selector for compat) */
+yt-tab-shape[tab-title="Shorts"],
+yt-tab-shape:has(a[href*="/shorts"]) {
   display: none !important;
 }
 
-/* "Shorts" chip in chip-cloud filters (e.g. home page filter bar) */
-yt-chip-cloud-chip-renderer:has(yt-formatted-string[title="Shorts"]) {
-  display: none !important;
-}
+/* Note: Shorts chip in chip-cloud filters has no reliable i18n CSS selector.
+   Handled by L3 content script (youtube.js) via text-content scan. */
 
 /* Shorts overlay badge on video thumbnails */
 [overlay-style="SHORTS"] {
