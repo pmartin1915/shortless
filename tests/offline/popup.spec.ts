@@ -1,5 +1,14 @@
 import { test, expect } from '../fixtures/extension';
 import { POPUP_PLATFORMS } from '../helpers/selectors';
+import fs from 'fs';
+import path from 'path';
+
+const manifest = JSON.parse(
+  fs.readFileSync(
+    path.resolve(__dirname, '..', '..', 'packages', 'extension', 'manifest.json'),
+    'utf-8'
+  )
+);
 
 test.describe('Popup UI', () => {
   test('renders title and tagline', async ({ context, extensionId }) => {
@@ -10,7 +19,7 @@ test.describe('Popup UI', () => {
     await expect(page.locator('.tagline')).toHaveText(
       'Block the Scroll. Keep the Content.'
     );
-    await expect(page.locator('.version')).toHaveText('v1.0.0');
+    await expect(page.locator('.version')).toHaveText(`v${manifest.version}`);
   });
 
   test('renders 4 platform cards', async ({ context, extensionId }) => {
