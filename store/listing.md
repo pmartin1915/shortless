@@ -42,16 +42,12 @@ Free, open source, and private by design. Take back control of your attention.
 
 Productivity
 
-## Tags / Keywords
+## Tags (CWS dashboard "tags" field only — DO NOT paste into description)
 
-- short-form video blocker
-- youtube shorts blocker
-- instagram reels blocker
-- tiktok blocker
-- snapchat spotlight blocker
-- content blocker
-- distraction blocker
-- productivity
-- focus
-- attention
-- digital wellbeing
+CWS allows up to 5 tags. Use these:
+
+1. short-form video blocker
+2. content blocker
+3. productivity
+4. focus
+5. digital wellbeing
