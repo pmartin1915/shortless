@@ -18,6 +18,23 @@ dist/
 build/
 *.zip
 
+# Build outputs (generated from packages/shared/ by scripts/build.js)
+# Only manifest.json is platform-specific and tracked in git.
+packages/extension/background.js
+packages/extension/PRIVACY_POLICY.md
+packages/extension/content-scripts/
+packages/extension/filters/
+packages/extension/icons/
+packages/extension/popup/
+packages/extension/styles/
+packages/extension-firefox/background.js
+packages/extension-firefox/PRIVACY_POLICY.md
+packages/extension-firefox/content-scripts/
+packages/extension-firefox/filters/
+packages/extension-firefox/icons/
+packages/extension-firefox/popup/
+packages/extension-firefox/styles/
+
 # Test
 test-profile-*/
 test-results/
