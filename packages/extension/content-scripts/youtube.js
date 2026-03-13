@@ -57,9 +57,9 @@
   }
 
   /**
-   * Hide "Shorts" chip-cloud chips by checking text content.
-   * This handles all locales since chip text is the only distinguishing feature.
-   * YouTube uses "Shorts" as the chip label across most locales.
+   * Hide "Shorts" chip-cloud chips.
+   * Primary: i18n-safe check for child links containing "/shorts".
+   * Fallback: text match for "Shorts" (YouTube brand name, same in most locales).
    *
    * @returns {number} Count of newly hidden chips.
    */
@@ -69,10 +69,20 @@
       'yt-chip-cloud-chip-renderer:not([data-shortless-hidden])'
     );
     for (var i = 0; i < chips.length; i++) {
-      var text = (chips[i].textContent || '').trim();
+      var chip = chips[i];
+      // i18n-safe: check if chip contains a link to /shorts
+      var link = chip.querySelector('a[href*="/shorts"]');
+      if (link) {
+        chip.style.setProperty('display', 'none', 'important');
+        chip.setAttribute('data-shortless-hidden', '');
+        count++;
+        continue;
+      }
+      // Fallback: text match (covers locales where chip has no link)
+      var text = (chip.textContent || '').trim();
       if (text === 'Shorts') {
-        chips[i].style.setProperty('display', 'none', 'important');
-        chips[i].setAttribute('data-shortless-hidden', '');
+        chip.style.setProperty('display', 'none', 'important');
+        chip.setAttribute('data-shortless-hidden', '');
         count++;
       }
     }

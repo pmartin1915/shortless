@@ -34,7 +34,7 @@ test.describe('YouTube DOM hiding (L2 CSS + L3 JS)', () => {
     });
 
     const entry = page.locator(
-      'ytd-guide-entry-renderer:has(a[title="Shorts"])'
+      'ytd-guide-entry-renderer:has(a[href="/shorts"])'
     );
     const count = await entry.count();
     if (count > 0) {

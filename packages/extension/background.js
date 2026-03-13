@@ -36,6 +36,8 @@ chrome.runtime.onInstalled.addListener((details) => {
 // --- Message Handling ---
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (sender.id !== chrome.runtime.id) return;
+
   switch (message.type) {
     case 'TOGGLE_PLATFORM':
       handleToggle(message.platform, message.enabled);
@@ -99,21 +101,45 @@ function getTodayKey() {
   return `blocks_${yyyy}-${mm}-${dd}`;
 }
 
+// Serializes concurrent increments to prevent lost counts from read-modify-write races.
+let _pendingIncrement = 0;
+let _flushInProgress = false;
+
 function incrementBlockCount(count) {
+  _pendingIncrement += count;
+  if (!_flushInProgress) {
+    _flushBlockCount();
+  }
+}
+
+function _flushBlockCount() {
+  if (_pendingIncrement <= 0) {
+    _flushInProgress = false;
+    return;
+  }
+  _flushInProgress = true;
+  const toAdd = _pendingIncrement;
+  _pendingIncrement = 0;
   const key = getTodayKey();
   chrome.storage.local.get(key, (data) => {
     if (chrome.runtime.lastError) {
       console.error('[Shortless] Failed to read block count:', chrome.runtime.lastError);
+      _pendingIncrement += toAdd; // re-queue on failure
+      _flushInProgress = false;
       return;
     }
     const current = data[key] || 0;
-    const updated = current + count;
+    const updated = current + toAdd;
     chrome.storage.local.set({ [key]: updated }, () => {
       if (chrome.runtime.lastError) {
         console.error('[Shortless] Failed to save block count:', chrome.runtime.lastError);
+        _pendingIncrement += toAdd; // re-queue on failure
+        _flushInProgress = false;
         return;
       }
       updateBadge(updated);
+      // Flush any increments that arrived during the write
+      _flushBlockCount();
     });
   });
 }
