@@ -85,7 +85,28 @@
       return originalFetch.apply(this, arguments);
     }
 
-    var body = (init && init.body) || null;
+    // Extract body from init options, or from a Request object.
+    var body = (init && init.body) || (input instanceof Request ? input.body : null);
+
+    // Handle string bodies synchronously (fast path — YouTube's current format).
+    if (typeof body === 'string') {
+      if (isShortsRequest(body)) {
+        return Promise.resolve(emptyBrowseResponse());
+      }
+      return originalFetch.apply(this, arguments);
+    }
+
+    // Handle non-string bodies (Blob, ArrayBuffer) asynchronously.
+    if (body && typeof body.text === 'function') {
+      return body.text().then(function (text) {
+        if (isShortsRequest(text)) {
+          return emptyBrowseResponse();
+        }
+        // Rebuild the body since reading consumed it.
+        var newInit = Object.assign({}, init, { body: text });
+        return originalFetch.call(this, input instanceof Request ? input.url : input, newInit);
+      }.bind(this));
+    }
 
     if (isShortsRequest(body)) {
       return Promise.resolve(emptyBrowseResponse());

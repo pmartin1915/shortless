@@ -8,8 +8,13 @@ a[href="/reels/"] {
   display: none !important;
 }
 
-/* Any link beginning with /reels/ */
+/* Any link beginning with /reels/ (covers main nav and sub-links) */
 a[href^="/reels/"] {
+  display: none !important;
+}
+
+/* Links to individual Reels (e.g., in Explore page grid) */
+a[href^="/reel/"] {
   display: none !important;
 }
 

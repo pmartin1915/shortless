@@ -25,6 +25,17 @@ chrome.runtime.onInstalled.addListener((details) => {
         console.error('[Shortless] Failed to set defaults:', chrome.runtime.lastError);
       }
     });
+  } else if (details.reason === 'update') {
+    // Ensure any newly added platforms get a default value
+    chrome.storage.sync.get(PLATFORMS, (result) => {
+      const missing = {};
+      PLATFORMS.forEach(p => {
+        if (result[p] === undefined) missing[p] = true;
+      });
+      if (Object.keys(missing).length > 0) {
+        chrome.storage.sync.set(missing);
+      }
+    });
   }
 
   // Set badge styling

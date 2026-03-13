@@ -138,11 +138,28 @@
     S.createObserver(hideAndReport);
   });
 
-  // Re-dispatch toggle state when the user changes it via the popup.
+  /**
+   * Restore visibility of elements previously hidden by Shortless.
+   */
+  function unhideAll() {
+    var hidden = document.querySelectorAll('[data-shortless-hidden]');
+    for (var i = 0; i < hidden.length; i++) {
+      hidden[i].style.removeProperty('display');
+      hidden[i].removeAttribute('data-shortless-hidden');
+    }
+  }
+
+  // React to live toggle changes from the popup.
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
     chrome.storage.onChanged.addListener(function (changes) {
       if (changes.youtube) {
-        dispatchToggleState(changes.youtube.newValue);
+        var nowEnabled = changes.youtube.newValue;
+        dispatchToggleState(nowEnabled);
+        if (nowEnabled) {
+          hideAndReport();
+        } else {
+          unhideAll();
+        }
       }
     });
   }

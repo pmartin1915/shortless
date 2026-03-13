@@ -46,3 +46,13 @@ ytd-grid-video-renderer:has([overlay-style="SHORTS"]) {
 ytd-video-renderer:has([overlay-style="SHORTS"]) {
   display: none !important;
 }
+
+/* Shorts entries in "rich item" containers (home page) */
+ytd-rich-item-renderer:has([overlay-style="SHORTS"]) {
+  display: none !important;
+}
+
+/* Shorts entries in "Up next" sidebar on watch pages */
+ytd-compact-video-renderer:has([overlay-style="SHORTS"]) {
+  display: none !important;
+}
