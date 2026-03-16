@@ -48,3 +48,10 @@ playwright-report/
 *.pem
 *.key
 credentials.json
+
+# Chrome extension metadata (auto-generated)
+packages/extension/_metadata/
+
+# Planning docs (private)
+*.docx
+*.pdf
