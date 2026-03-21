@@ -40,7 +40,9 @@ chrome.runtime.onInstalled.addListener((details) => {
 
   // Set badge styling
   chrome.action.setBadgeBackgroundColor({ color: '#2E75B6' });
-  chrome.action.setBadgeTextColor({ color: '#FFFFFF' });
+  if (typeof chrome.action.setBadgeTextColor === 'function') {
+    chrome.action.setBadgeTextColor({ color: '#FFFFFF' });
+  }
   updateBadge();
 });
 
