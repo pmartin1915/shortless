@@ -113,8 +113,13 @@
    * @param {boolean} state
    */
   function dispatchToggleState(state) {
+    var detail = { enabled: state };
+    // Firefox requires cloneInto to pass objects from ISOLATED → MAIN world.
+    if (typeof cloneInto === 'function') {
+      detail = cloneInto(detail, document.defaultView);
+    }
     document.dispatchEvent(new CustomEvent('shortless-youtube-state', {
-      detail: { enabled: state }
+      detail: detail
     }));
   }
 
