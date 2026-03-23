@@ -189,3 +189,11 @@ function setBadgeText(count) {
 
 // Update badge on startup
 updateBadge();
+
+// --- Test exports (no-op in browser service workers) ---
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    getTodayKey, handleToggle, incrementBlockCount, _flushBlockCount,
+    getBlockCount, updateBadge, setBadgeText, PLATFORMS, RULESET_MAP
+  };
+}

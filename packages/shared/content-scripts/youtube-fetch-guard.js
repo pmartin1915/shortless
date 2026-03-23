@@ -114,4 +114,9 @@
 
     return originalFetch.apply(this, arguments);
   };
+
+  // --- Test exports (no-op in browser MAIN world scripts) ---
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { isShortsRequest, emptyBrowseResponse };
+  }
 })();
