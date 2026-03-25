@@ -142,3 +142,17 @@ body {
   color: #2E75B6;
   font-weight: 600;
 }
+
+.report-link {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 11px;
+  color: #666;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.report-link:hover {
+  color: #2E75B6;
+  text-decoration: underline;
+}

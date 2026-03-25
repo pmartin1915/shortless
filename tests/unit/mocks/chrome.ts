@@ -14,11 +14,22 @@ export function createChromeMock() {
       lastError: null as null | { message: string },
       onInstalled: { addListener: vi.fn() },
       onMessage: { addListener: vi.fn() },
+      sendMessage: vi.fn(),
+      getManifest: vi.fn(() => ({ version: '1.1.2' })),
     },
     storage: {
       sync: {
-        get: vi.fn((keys: string | string[], cb: (result: Record<string, any>) => void) => {
-          const keyList = Array.isArray(keys) ? keys : [keys];
+        get: vi.fn((keys: string | string[] | Record<string, any>, cb: (result: Record<string, any>) => void) => {
+          // Handle object-with-defaults (e.g. { youtube: true }) — merge defaults with stored values
+          if (keys && typeof keys === 'object' && !Array.isArray(keys)) {
+            const result: Record<string, any> = { ...keys };
+            Object.keys(keys).forEach(k => {
+              if (k in syncStorage) result[k] = syncStorage[k];
+            });
+            cb(result);
+            return;
+          }
+          const keyList = Array.isArray(keys) ? keys : [keys as string];
           const result: Record<string, any> = {};
           keyList.forEach(k => {
             if (k in syncStorage) result[k] = syncStorage[k];
@@ -48,6 +59,9 @@ export function createChromeMock() {
       setBadgeBackgroundColor: vi.fn(),
       setBadgeTextColor: vi.fn(),
       setBadgeText: vi.fn(),
+    },
+    tabs: {
+      create: vi.fn(),
     },
     // Expose internal storage for test assertions
     _syncStorage: syncStorage,

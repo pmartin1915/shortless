@@ -81,19 +81,6 @@
     hideAndReport();
   }
 
-  // ---- Live toggle ----------------------------------------------------------
-
-  /**
-   * Restore visibility of elements previously hidden by Shortless.
-   */
-  function unhideAll() {
-    var hidden = document.querySelectorAll('[data-shortless-hidden]');
-    for (var i = 0; i < hidden.length; i++) {
-      hidden[i].style.removeProperty('display');
-      hidden[i].removeAttribute('data-shortless-hidden');
-    }
-  }
-
   // ---- Initialisation -------------------------------------------------------
 
   var isActive = false;
@@ -119,21 +106,22 @@
   }).then(function () {
     // React to live toggle changes from the popup.
     // Registered after init to avoid race with isPlatformEnabled resolution.
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
-      chrome.storage.onChanged.addListener(function (changes, areaName) {
-        if (areaName !== 'sync') return;
-        if (changes.instagram) {
-          var nowEnabled = changes.instagram.newValue;
-          isActive = nowEnabled;
-          if (nowEnabled) {
-            hideAndReport();
-            if (!observer) observer = S.createObserver(hideAndReport);
-          } else {
-            unhideAll();
-            if (observer) { observer.disconnect(); observer = null; }
-          }
-        }
-      });
-    }
+    S.watchToggle('instagram', {
+      onEnable: function () {
+        isActive = true;
+        hideAndReport();
+        if (!observer) observer = S.createObserver(hideAndReport);
+      },
+      onDisable: function () {
+        isActive = false;
+        S.unhideAll();
+        if (observer) { observer.disconnect(); observer = null; }
+      }
+    });
   });
+
+  // --- Test exports (no-op in browser content scripts) ---
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { redirectReels, collapseParentListItems, REELS_SELECTORS };
+  }
 })();

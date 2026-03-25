@@ -88,11 +88,32 @@
     }
   }
 
+  function setupReportBreakage() {
+    var link = document.getElementById('report-breakage');
+    if (!link) return;
+
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      var version = chrome.runtime.getManifest().version;
+      var title = encodeURIComponent('Breakage Report — v' + version);
+      var body = encodeURIComponent(
+        '**Version:** ' + version + '\n' +
+        '**Browser:** ' + navigator.userAgent.split(' ').pop() + '\n' +
+        '**Platform:** \n' +
+        '**URL (if applicable):** \n\n' +
+        '**What leaked through?**\n\n'
+      );
+      var url = 'https://github.com/pmartin1915/shortless/issues/new?title=' + title + '&body=' + body;
+      chrome.tabs.create({ url: url });
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     setVersion();
     loadPlatformStates();
     loadBlockCount();
     setupToggleHandlers();
     setupStorageListener();
+    setupReportBreakage();
   });
 })();

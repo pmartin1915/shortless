@@ -24,11 +24,13 @@
 
     var isScheduled = false;
     var observer = new MutationObserver(function () {
+      observer.takeRecords(); // Clear queue to prevent MutationRecord memory buildup
       if (!isScheduled) {
         isScheduled = true;
+        callback(); // Leading edge: fire immediately on first mutation
         setTimeout(function () {
           isScheduled = false;
-          callback();
+          callback(); // Trailing edge: catch mutations during the throttle window
         }, throttleMs);
       }
     });
@@ -59,7 +61,11 @@
   function hideElements(selectors, markerAttr) {
     if (!markerAttr) markerAttr = 'data-shortless-hidden';
 
-    var combined = selectors.join(', ');
+    // Append :not() filter so the browser's CSS engine skips already-hidden
+    // elements — avoids iterating thousands of processed nodes on infinite scroll.
+    var combined = selectors.map(function (s) {
+      return s + ':not([' + markerAttr + '])';
+    }).join(', ');
     if (!combined) return 0;
 
     var elements;
@@ -73,29 +79,11 @@
     var count = 0;
     for (var i = 0; i < elements.length; i++) {
       var el = elements[i];
-      if (!el.hasAttribute(markerAttr)) {
-        el.style.setProperty('display', 'none', 'important');
-        el.setAttribute(markerAttr, 'true');
-        count++;
-      }
+      el.style.setProperty('display', 'none', 'important');
+      el.setAttribute(markerAttr, 'true');
+      count++;
     }
     return count;
-  }
-
-  /**
-   * If the current URL path starts with pathPrefix, navigate away via
-   * location.replace (no back-button entry).
-   *
-   * @param {string} pathPrefix  - e.g. "/shorts/"
-   * @param {string} redirectUrl - Full or relative URL to redirect to.
-   * @returns {boolean} True if a redirect was initiated.
-   */
-  function checkUrlAndRedirect(pathPrefix, redirectUrl) {
-    if (window.location.pathname.startsWith(pathPrefix)) {
-      window.location.replace(redirectUrl);
-      return true;
-    }
-    return false;
   }
 
   /**
@@ -118,9 +106,11 @@
    *
    * @param {Function} callback - Receives window.location.href on each nav.
    */
+  var _historyPatched = false;
   function interceptHistoryNav(callback) {
     // Guard against double-wrapping if called multiple times.
-    if (history.pushState.__shortlessPatched) return;
+    if (_historyPatched) return;
+    _historyPatched = true;
 
     var origPush = history.pushState;
     var origReplace = history.replaceState;
@@ -130,7 +120,6 @@
       callback(window.location.href);
       return ret;
     };
-    history.pushState.__shortlessPatched = true;
 
     history.replaceState = function () {
       var ret = origReplace.apply(this, arguments);
@@ -168,13 +157,58 @@
     });
   }
 
+  /**
+   * Restore visibility of all elements previously hidden by Shortless.
+   *
+   * @param {string} markerAttr - Data attribute used to identify hidden elements.
+   */
+  function unhideAll(markerAttr) {
+    var attr = markerAttr || 'data-shortless-hidden';
+    var hidden = document.querySelectorAll('[' + attr + ']');
+    for (var i = 0; i < hidden.length; i++) {
+      hidden[i].style.removeProperty('display');
+      hidden[i].removeAttribute(attr);
+    }
+  }
+
+  /**
+   * Listen for live toggle changes from the popup via chrome.storage.onChanged.
+   * Eliminates boilerplate duplication across platform scripts.
+   *
+   * @param {string}   platform  - Storage key to watch (e.g. "youtube").
+   * @param {Object}   callbacks - { onEnable: Function, onDisable: Function }
+   */
+  function watchToggle(platform, callbacks) {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+      chrome.storage.onChanged.addListener(function (changes, areaName) {
+        if (areaName !== 'sync') return;
+        if (changes[platform]) {
+          if (changes[platform].newValue) {
+            callbacks.onEnable();
+          } else {
+            callbacks.onDisable();
+          }
+        }
+      });
+    }
+  }
+
   // Expose public API
   window.__shortless = {
     createObserver: createObserver,
     hideElements: hideElements,
-    checkUrlAndRedirect: checkUrlAndRedirect,
     sendBlockCount: sendBlockCount,
     interceptHistoryNav: interceptHistoryNav,
-    isPlatformEnabled: isPlatformEnabled
+    isPlatformEnabled: isPlatformEnabled,
+    unhideAll: unhideAll,
+    watchToggle: watchToggle
   };
+
+  // --- Test exports (no-op in browser content scripts) ---
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+      createObserver, hideElements, sendBlockCount,
+      interceptHistoryNav, isPlatformEnabled, unhideAll, watchToggle
+    };
+  }
 })();

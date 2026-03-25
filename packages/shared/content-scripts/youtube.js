@@ -116,7 +116,10 @@
    */
   function getGuardToken() {
     var meta = document.querySelector('meta[name="shortless-guard"]');
-    return meta ? meta.getAttribute('content') : null;
+    if (!meta) return null;
+    var token = meta.getAttribute('content');
+    meta.remove(); // Remove from DOM to reduce token exposure window
+    return token;
   }
 
   /**
@@ -133,17 +136,6 @@
     document.dispatchEvent(new CustomEvent('shortless-youtube-state', {
       detail: detail
     }));
-  }
-
-  /**
-   * Restore visibility of elements previously hidden by Shortless.
-   */
-  function unhideAll() {
-    var hidden = document.querySelectorAll('[data-shortless-hidden]');
-    for (var i = 0; i < hidden.length; i++) {
-      hidden[i].style.removeProperty('display');
-      hidden[i].removeAttribute('data-shortless-hidden');
-    }
   }
 
   var isActive = false;
@@ -172,22 +164,24 @@
   }).then(function () {
     // React to live toggle changes from the popup.
     // Registered after init to avoid race with isPlatformEnabled resolution.
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
-      chrome.storage.onChanged.addListener(function (changes, areaName) {
-        if (areaName !== 'sync') return;
-        if (changes.youtube) {
-          var nowEnabled = changes.youtube.newValue;
-          isActive = nowEnabled;
-          dispatchToggleState(nowEnabled);
-          if (nowEnabled) {
-            hideAndReport();
-            if (!observer) observer = S.createObserver(hideAndReport);
-          } else {
-            unhideAll();
-            if (observer) { observer.disconnect(); observer = null; }
-          }
-        }
-      });
-    }
+    S.watchToggle('youtube', {
+      onEnable: function () {
+        isActive = true;
+        dispatchToggleState(true);
+        hideAndReport();
+        if (!observer) observer = S.createObserver(hideAndReport);
+      },
+      onDisable: function () {
+        isActive = false;
+        dispatchToggleState(false);
+        S.unhideAll();
+        if (observer) { observer.disconnect(); observer = null; }
+      }
+    });
   });
+
+  // --- Test exports (no-op in browser content scripts) ---
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { redirectShorts, hideChipsByText, SHORTS_SELECTORS };
+  }
 })();
