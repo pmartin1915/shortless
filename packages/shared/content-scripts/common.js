@@ -10,23 +10,27 @@
   if (window.__shortless) return; // already initialised
 
   /**
-   * Create a MutationObserver on document.body that fires a debounced callback
-   * whenever the DOM subtree changes.
+   * Create a MutationObserver on document.body that fires a throttled callback
+   * whenever the DOM subtree changes. Uses a trailing-edge throttle to guarantee
+   * the callback fires at most once per interval, even during continuous
+   * mutations (e.g. infinite scroll feeds).
    *
    * @param {Function} callback - Invoked after mutations settle.
-   * @param {number}   debounceMs - Debounce window in milliseconds (default 150).
+   * @param {number}   throttleMs - Throttle window in milliseconds (default 150).
    * @returns {MutationObserver}
    */
-  function createObserver(callback, debounceMs) {
-    if (debounceMs === undefined) debounceMs = 150;
+  function createObserver(callback, throttleMs) {
+    if (throttleMs === undefined) throttleMs = 150;
 
-    var timer = null;
+    var isScheduled = false;
     var observer = new MutationObserver(function () {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(function () {
-        timer = null;
-        callback();
-      }, debounceMs);
+      if (!isScheduled) {
+        isScheduled = true;
+        setTimeout(function () {
+          isScheduled = false;
+          callback();
+        }, throttleMs);
+      }
     });
 
     // Observe as soon as body exists; if not yet available, wait for it.
@@ -115,17 +119,23 @@
    * @param {Function} callback - Receives window.location.href on each nav.
    */
   function interceptHistoryNav(callback) {
+    // Guard against double-wrapping if called multiple times.
+    if (history.pushState.__shortlessPatched) return;
+
     var origPush = history.pushState;
     var origReplace = history.replaceState;
 
     history.pushState = function () {
-      origPush.apply(this, arguments);
+      var ret = origPush.apply(this, arguments);
       callback(window.location.href);
+      return ret;
     };
+    history.pushState.__shortlessPatched = true;
 
     history.replaceState = function () {
-      origReplace.apply(this, arguments);
+      var ret = origReplace.apply(this, arguments);
       callback(window.location.href);
+      return ret;
     };
 
     window.addEventListener('popstate', function () {

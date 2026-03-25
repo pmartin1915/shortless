@@ -93,6 +93,7 @@
    * Run the hide pass and report any newly hidden elements.
    */
   function hideAndReport() {
+    if (!isActive) return;
     var count = S.hideElements(SHORTS_SELECTORS);
     count += hideChipsByText();
     S.sendBlockCount(count);
@@ -102,6 +103,7 @@
    * Combined handler for navigation events – redirect if needed, then hide.
    */
   function onNavigate() {
+    if (!isActive) return;
     if (redirectShorts()) return;
     hideAndReport();
   }
@@ -109,11 +111,21 @@
   // ---- Initialisation -------------------------------------------------------
 
   /**
+   * Read the auth token set by the MAIN-world fetch guard.
+   * @returns {string|null}
+   */
+  function getGuardToken() {
+    var meta = document.querySelector('meta[name="shortless-guard"]');
+    return meta ? meta.getAttribute('content') : null;
+  }
+
+  /**
    * Dispatch toggle state to the MAIN-world fetch guard script.
+   * Includes the guard's auth token to prevent page-script spoofing.
    * @param {boolean} state
    */
   function dispatchToggleState(state) {
-    var detail = { enabled: state };
+    var detail = { enabled: state, _t: getGuardToken() };
     // Firefox requires cloneInto to pass objects from ISOLATED → MAIN world.
     if (typeof cloneInto === 'function') {
       detail = cloneInto(detail, document.defaultView);
@@ -123,7 +135,23 @@
     }));
   }
 
+  /**
+   * Restore visibility of elements previously hidden by Shortless.
+   */
+  function unhideAll() {
+    var hidden = document.querySelectorAll('[data-shortless-hidden]');
+    for (var i = 0; i < hidden.length; i++) {
+      hidden[i].style.removeProperty('display');
+      hidden[i].removeAttribute('data-shortless-hidden');
+    }
+  }
+
+  var isActive = false;
+  var observer = null;
+
   S.isPlatformEnabled('youtube').then(function (enabled) {
+    isActive = enabled;
+
     // Inform the fetch guard of the current toggle state.
     dispatchToggleState(enabled);
 
@@ -140,32 +168,26 @@
     document.addEventListener('yt-page-data-updated', onNavigate);
 
     // Observe DOM mutations for lazily-loaded Shorts content
-    S.createObserver(hideAndReport);
-  });
-
-  /**
-   * Restore visibility of elements previously hidden by Shortless.
-   */
-  function unhideAll() {
-    var hidden = document.querySelectorAll('[data-shortless-hidden]');
-    for (var i = 0; i < hidden.length; i++) {
-      hidden[i].style.removeProperty('display');
-      hidden[i].removeAttribute('data-shortless-hidden');
-    }
-  }
-
-  // React to live toggle changes from the popup.
-  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
-    chrome.storage.onChanged.addListener(function (changes) {
-      if (changes.youtube) {
-        var nowEnabled = changes.youtube.newValue;
-        dispatchToggleState(nowEnabled);
-        if (nowEnabled) {
-          hideAndReport();
-        } else {
-          unhideAll();
+    observer = S.createObserver(hideAndReport);
+  }).then(function () {
+    // React to live toggle changes from the popup.
+    // Registered after init to avoid race with isPlatformEnabled resolution.
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+      chrome.storage.onChanged.addListener(function (changes, areaName) {
+        if (areaName !== 'sync') return;
+        if (changes.youtube) {
+          var nowEnabled = changes.youtube.newValue;
+          isActive = nowEnabled;
+          dispatchToggleState(nowEnabled);
+          if (nowEnabled) {
+            hideAndReport();
+            if (!observer) observer = S.createObserver(hideAndReport);
+          } else {
+            unhideAll();
+            if (observer) { observer.disconnect(); observer = null; }
+          }
         }
-      }
-    });
-  }
+      });
+    }
+  });
 })();

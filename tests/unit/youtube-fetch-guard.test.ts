@@ -17,6 +17,9 @@ let fakeFetch: ReturnType<typeof vi.fn>;
  * After loading, `window.fetch` is the guard; `fakeFetch` is the original.
  */
 function loadGuard() {
+  // Remove stale meta tags from previous loads
+  document.querySelectorAll('meta[name="shortless-guard"]').forEach((el) => el.remove());
+
   // Set up the fake fetch that the guard will capture as "originalFetch"
   fakeFetch = vi.fn(() => Promise.resolve(new Response('ok')));
   vi.stubGlobal('fetch', fakeFetch);
@@ -26,6 +29,21 @@ function loadGuard() {
   delete require.cache[resolved];
 
   return require(GUARD_PATH);
+}
+
+/** Read the auth token the guard wrote to a <meta> tag. */
+function getGuardToken(): string | null {
+  const meta = document.querySelector('meta[name="shortless-guard"]');
+  return meta ? meta.getAttribute('content') : null;
+}
+
+/** Dispatch a toggle event with the correct auth token. */
+function dispatchToggle(enabled: boolean) {
+  document.dispatchEvent(
+    new CustomEvent('shortless-youtube-state', {
+      detail: { enabled, _t: getGuardToken() },
+    })
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -163,10 +181,8 @@ describe('fetch interception', () => {
 
   it('passes through when enabled=false (toggle off)', async () => {
     loadGuard();
-    // Disable via CustomEvent
-    document.dispatchEvent(
-      new CustomEvent('shortless-youtube-state', { detail: { enabled: false } })
-    );
+    // Disable via authenticated CustomEvent
+    dispatchToggle(false);
 
     await window.fetch('https://www.youtube.com/youtubei/v1/browse', {
       method: 'POST',
@@ -197,9 +213,7 @@ describe('toggle state', () => {
     loadGuard();
 
     // Disable
-    document.dispatchEvent(
-      new CustomEvent('shortless-youtube-state', { detail: { enabled: false } })
-    );
+    dispatchToggle(false);
     await window.fetch('https://www.youtube.com/youtubei/v1/browse', {
       method: 'POST',
       body: JSON.stringify({ browseId: 'FEshorts' }),
@@ -209,13 +223,30 @@ describe('toggle state', () => {
     fakeFetch.mockClear();
 
     // Re-enable
-    document.dispatchEvent(
-      new CustomEvent('shortless-youtube-state', { detail: { enabled: true } })
-    );
+    dispatchToggle(true);
     await window.fetch('https://www.youtube.com/youtubei/v1/browse', {
       method: 'POST',
       body: JSON.stringify({ browseId: 'FEshorts' }),
     });
     expect(fakeFetch).not.toHaveBeenCalled();
+  });
+
+  it('rejects toggle events without valid auth token', async () => {
+    loadGuard();
+
+    // Spoofed event without token — should be ignored
+    document.dispatchEvent(
+      new CustomEvent('shortless-youtube-state', { detail: { enabled: false } })
+    );
+
+    const resp = await window.fetch('https://www.youtube.com/youtubei/v1/browse', {
+      method: 'POST',
+      body: JSON.stringify({ browseId: 'FEshorts' }),
+    });
+
+    // Guard should still be enabled — spoof was rejected
+    expect(fakeFetch).not.toHaveBeenCalled();
+    const body = await resp.json();
+    expect(body).toEqual({ responseContext: {}, contents: {} });
   });
 });

@@ -56,17 +56,15 @@
       checkbox.addEventListener('change', function () {
         var enabled = checkbox.checked;
 
-        // Update sync storage
-        var update = {};
-        update[platform] = enabled;
-        chrome.storage.sync.set(update);
-
-        // Notify background script
-        chrome.runtime.sendMessage({
-          type: 'TOGGLE_PLATFORM',
-          platform: platform,
-          enabled: enabled
-        });
+        // Background script is the single source of truth for storage writes.
+        chrome.runtime.sendMessage(
+          { type: 'TOGGLE_PLATFORM', platform: platform, enabled: enabled },
+          function (response) {
+            if (chrome.runtime.lastError || !response || !response.success) {
+              checkbox.checked = !enabled; // revert on failure
+            }
+          }
+        );
       });
     });
   }

@@ -57,12 +57,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ success: true });
       break;
 
-    case 'BLOCK_COUNT_INCREMENT':
-      incrementBlockCount(message.count || 1);
+    case 'BLOCK_COUNT_INCREMENT': {
+      const safeCount = Math.min(Math.max(Number(message.count) || 1, 1), 100);
+      incrementBlockCount(safeCount);
       sendResponse({ success: true });
       break;
+    }
 
     case 'GET_PLATFORM_STATE':
+      if (!PLATFORMS.includes(message.platform)) {
+        sendResponse({ enabled: true });
+        break;
+      }
       chrome.storage.sync.get(message.platform, (data) => {
         if (chrome.runtime.lastError) {
           console.error('[Shortless] Failed to get platform state:', chrome.runtime.lastError);

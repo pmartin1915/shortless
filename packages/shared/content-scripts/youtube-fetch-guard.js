@@ -16,9 +16,21 @@
   // Default to blocking until told otherwise by the isolated-world script.
   var enabled = true;
 
+  // Generate an auth token to prevent page scripts from spoofing toggle events.
+  // The ISOLATED world content script reads this from the DOM and includes it.
+  var _authToken = Array.from(crypto.getRandomValues(new Uint8Array(8)), function (b) {
+    return b.toString(36);
+  }).join('');
+  try {
+    var meta = document.createElement('meta');
+    meta.setAttribute('name', 'shortless-guard');
+    meta.setAttribute('content', _authToken);
+    (document.head || document.documentElement).appendChild(meta);
+  } catch (e) { /* pre-DOM edge case — token validation will simply not match */ }
+
   // Listen for toggle state from the isolated-world content script.
   document.addEventListener('shortless-youtube-state', function (e) {
-    if (e.detail && typeof e.detail.enabled === 'boolean') {
+    if (e.detail && typeof e.detail.enabled === 'boolean' && e.detail._t === _authToken) {
       enabled = e.detail.enabled;
     }
   });
@@ -96,20 +108,34 @@
       return originalFetch.apply(this, arguments);
     }
 
-    // Handle non-string bodies (Blob, ArrayBuffer) asynchronously.
+    // Handle Request objects with non-string bodies via clone().
+    // clone() preserves headers, credentials, and mode — avoids losing them.
+    if (input instanceof Request && body && typeof body !== 'string') {
+      try {
+        var req = input.clone();
+        return req.text().then(function (text) {
+          if (isShortsRequest(text)) {
+            return emptyBrowseResponse();
+          }
+          // Re-create a fresh request since reading consumed the clone's body.
+          return originalFetch.call(this, new Request(input, init));
+        }.bind(this)).catch(function () {
+          return originalFetch.call(this, new Request(input, init));
+        }.bind(this));
+      } catch (e) {
+        return originalFetch.apply(this, arguments);
+      }
+    }
+
+    // Handle non-string bodies (Blob, ArrayBuffer) when input is a URL string.
     if (body && typeof body.text === 'function') {
       return body.text().then(function (text) {
         if (isShortsRequest(text)) {
           return emptyBrowseResponse();
         }
-        // Rebuild the body since reading consumed it.
         var newInit = Object.assign({}, init, { body: text });
-        return originalFetch.call(this, input instanceof Request ? input.url : input, newInit);
+        return originalFetch.call(this, input, newInit);
       }.bind(this));
-    }
-
-    if (isShortsRequest(body)) {
-      return Promise.resolve(emptyBrowseResponse());
     }
 
     return originalFetch.apply(this, arguments);

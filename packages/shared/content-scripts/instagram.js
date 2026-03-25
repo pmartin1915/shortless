@@ -66,6 +66,7 @@
    * Run the hide pass, collapse parent list items, and report counts.
    */
   function hideAndReport() {
+    if (!isActive) return;
     var count = S.hideElements(REELS_SELECTORS);
     collapseParentListItems();
     S.sendBlockCount(count);
@@ -75,13 +76,31 @@
    * Combined handler for navigation events.
    */
   function onNavigate() {
+    if (!isActive) return;
     if (redirectReels()) return;
     hideAndReport();
   }
 
+  // ---- Live toggle ----------------------------------------------------------
+
+  /**
+   * Restore visibility of elements previously hidden by Shortless.
+   */
+  function unhideAll() {
+    var hidden = document.querySelectorAll('[data-shortless-hidden]');
+    for (var i = 0; i < hidden.length; i++) {
+      hidden[i].style.removeProperty('display');
+      hidden[i].removeAttribute('data-shortless-hidden');
+    }
+  }
+
   // ---- Initialisation -------------------------------------------------------
 
+  var isActive = false;
+  var observer = null;
+
   S.isPlatformEnabled('instagram').then(function (enabled) {
+    isActive = enabled;
     if (!enabled) return;
 
     // Immediate redirect check
@@ -96,6 +115,25 @@
     });
 
     // Observe DOM mutations for lazily-loaded Reels content
-    S.createObserver(hideAndReport);
+    observer = S.createObserver(hideAndReport);
+  }).then(function () {
+    // React to live toggle changes from the popup.
+    // Registered after init to avoid race with isPlatformEnabled resolution.
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+      chrome.storage.onChanged.addListener(function (changes, areaName) {
+        if (areaName !== 'sync') return;
+        if (changes.instagram) {
+          var nowEnabled = changes.instagram.newValue;
+          isActive = nowEnabled;
+          if (nowEnabled) {
+            hideAndReport();
+            if (!observer) observer = S.createObserver(hideAndReport);
+          } else {
+            unhideAll();
+            if (observer) { observer.disconnect(); observer = null; }
+          }
+        }
+      });
+    }
   });
 })();
