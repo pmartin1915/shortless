@@ -165,6 +165,29 @@ describe('YouTube SHORTS_SELECTORS', () => {
 });
 
 // ---------------------------------------------------------------------------
+// YouTube — SHORTS_CHIP_TERMS (i18n fallback)
+// ---------------------------------------------------------------------------
+describe('YouTube SHORTS_CHIP_TERMS', () => {
+  it('exports known localized Shorts terms', () => {
+    const yt = loadWithCommon(YOUTUBE_PATH);
+    expect(yt.SHORTS_CHIP_TERMS).toContain('Shorts');
+    expect(yt.SHORTS_CHIP_TERMS).toContain('Cortos');
+    expect(yt.SHORTS_CHIP_TERMS).toContain('Curtas');
+    expect(yt.SHORTS_CHIP_TERMS.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('hides chips with localized text "Cortos"', () => {
+    document.body.innerHTML = `
+      <yt-chip-cloud-chip-renderer>Cortos</yt-chip-cloud-chip-renderer>
+      <yt-chip-cloud-chip-renderer>Music</yt-chip-cloud-chip-renderer>
+    `;
+    const yt = loadWithCommon(YOUTUBE_PATH);
+    const count = yt.hideChipsByText();
+    expect(count).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Instagram — redirectReels()
 // ---------------------------------------------------------------------------
 describe('Instagram redirectReels()', () => {

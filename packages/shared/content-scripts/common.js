@@ -88,17 +88,40 @@
 
   /**
    * Send a block-count increment message to the background / service worker.
+   * Accumulates counts locally and flushes once every 2 seconds to avoid
+   * flooding the IPC channel on heavy-mutation pages (e.g. infinite scroll).
    *
    * @param {number} count - Number of elements blocked in this batch.
    */
-  function sendBlockCount(count) {
-    if (count <= 0) return;
+  var _pendingBlockCount = 0;
+  var _flushTimeout = null;
+
+  function flushPendingCount() {
+    if (_pendingBlockCount <= 0) return;
+    if (_flushTimeout !== null) {
+      clearTimeout(_flushTimeout);
+      _flushTimeout = null;
+    }
+    var toSend = _pendingBlockCount;
+    _pendingBlockCount = 0;
     try {
-      chrome.runtime.sendMessage({ type: 'BLOCK_COUNT_INCREMENT', count: count });
+      chrome.runtime.sendMessage({ type: 'BLOCK_COUNT_INCREMENT', count: toSend });
     } catch (e) {
       // Extension context may have been invalidated (e.g. update/reload).
     }
   }
+
+  function sendBlockCount(count) {
+    if (count <= 0) return;
+    _pendingBlockCount += count;
+    if (_flushTimeout === null) {
+      _flushTimeout = setTimeout(flushPendingCount, 2000);
+    }
+  }
+
+  // Flush any accumulated counts before the page is destroyed.
+  // pagehide is preferred over beforeunload for bfcache compatibility.
+  window.addEventListener('pagehide', flushPendingCount);
 
   /**
    * Monkey-patch history.pushState / replaceState and listen for popstate so
@@ -207,7 +230,7 @@
   // --- Test exports (no-op in browser content scripts) ---
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
-      createObserver, hideElements, sendBlockCount,
+      createObserver, hideElements, sendBlockCount, flushPendingCount,
       interceptHistoryNav, isPlatformEnabled, unhideAll, watchToggle
     };
   }

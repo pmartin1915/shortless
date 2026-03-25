@@ -134,16 +134,53 @@ describe('unhideAll()', () => {
 });
 
 // ---------------------------------------------------------------------------
-// sendBlockCount()
+// sendBlockCount() — debounced (2-second flush)
 // ---------------------------------------------------------------------------
 describe('sendBlockCount()', () => {
-  it('sends BLOCK_COUNT_INCREMENT message for positive counts', () => {
+  it('does not send immediately — waits for debounce flush', () => {
+    vi.useFakeTimers();
+    const sendMsg = vi.fn();
+    chromeMock.runtime.sendMessage = sendMsg;
+    vi.stubGlobal('chrome', chromeMock);
+
     const common = loadCommon();
     common.sendBlockCount(5);
-    expect(chromeMock.runtime.sendMessage).toBeDefined();
+    expect(sendMsg).not.toHaveBeenCalled();
+  });
+
+  it('sends accumulated count after 2 seconds', () => {
+    vi.useFakeTimers();
+    const sendMsg = vi.fn();
+    chromeMock.runtime.sendMessage = sendMsg;
+    vi.stubGlobal('chrome', chromeMock);
+
+    const common = loadCommon();
+    common.sendBlockCount(3);
+    common.sendBlockCount(7);
+
+    vi.advanceTimersByTime(2000);
+    expect(sendMsg).toHaveBeenCalledOnce();
+    expect(sendMsg).toHaveBeenCalledWith({ type: 'BLOCK_COUNT_INCREMENT', count: 10 });
+  });
+
+  it('resets accumulator after flush', () => {
+    vi.useFakeTimers();
+    const sendMsg = vi.fn();
+    chromeMock.runtime.sendMessage = sendMsg;
+    vi.stubGlobal('chrome', chromeMock);
+
+    const common = loadCommon();
+    common.sendBlockCount(5);
+    vi.advanceTimersByTime(2000);
+    sendMsg.mockClear();
+
+    common.sendBlockCount(2);
+    vi.advanceTimersByTime(2000);
+    expect(sendMsg).toHaveBeenCalledWith({ type: 'BLOCK_COUNT_INCREMENT', count: 2 });
   });
 
   it('does not send for zero or negative counts', () => {
+    vi.useFakeTimers();
     const sendMsg = vi.fn();
     chromeMock.runtime.sendMessage = sendMsg;
     vi.stubGlobal('chrome', chromeMock);
@@ -151,6 +188,37 @@ describe('sendBlockCount()', () => {
     const common = loadCommon();
     common.sendBlockCount(0);
     common.sendBlockCount(-3);
+    vi.advanceTimersByTime(2000);
+    expect(sendMsg).not.toHaveBeenCalled();
+  });
+
+  it('flushPendingCount sends immediately and clears timer', () => {
+    vi.useFakeTimers();
+    const sendMsg = vi.fn();
+    chromeMock.runtime.sendMessage = sendMsg;
+    vi.stubGlobal('chrome', chromeMock);
+
+    const common = loadCommon();
+    common.sendBlockCount(8);
+    expect(sendMsg).not.toHaveBeenCalled();
+
+    common.flushPendingCount();
+    expect(sendMsg).toHaveBeenCalledOnce();
+    expect(sendMsg).toHaveBeenCalledWith({ type: 'BLOCK_COUNT_INCREMENT', count: 8 });
+
+    // Timer should be cleared — advancing should not send again
+    sendMsg.mockClear();
+    vi.advanceTimersByTime(2000);
+    expect(sendMsg).not.toHaveBeenCalled();
+  });
+
+  it('flushPendingCount is a no-op when nothing is pending', () => {
+    const sendMsg = vi.fn();
+    chromeMock.runtime.sendMessage = sendMsg;
+    vi.stubGlobal('chrome', chromeMock);
+
+    const common = loadCommon();
+    common.flushPendingCount();
     expect(sendMsg).not.toHaveBeenCalled();
   });
 });
@@ -267,5 +335,95 @@ describe('interceptHistoryNav()', () => {
     // pushState returns undefined per spec
     const ret = history.pushState({}, '', '/retval');
     expect(ret).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// createObserver()
+// ---------------------------------------------------------------------------
+describe('createObserver()', () => {
+  it('returns a MutationObserver instance', () => {
+    const common = loadCommon();
+    const observer = common.createObserver(vi.fn());
+    expect(observer).toBeInstanceOf(MutationObserver);
+    observer.disconnect();
+  });
+
+  it('calls callback on DOM mutation (leading edge)', async () => {
+    vi.useFakeTimers();
+    const common = loadCommon();
+    const callback = vi.fn();
+    const observer = common.createObserver(callback, 100);
+
+    document.body.appendChild(document.createElement('div'));
+
+    // Flush microtask queue so MutationObserver callback is delivered
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(callback).toHaveBeenCalledTimes(1);
+    observer.disconnect();
+  });
+
+  it('fires trailing edge after throttle window', async () => {
+    vi.useFakeTimers();
+    const common = loadCommon();
+    const callback = vi.fn();
+    const observer = common.createObserver(callback, 100);
+
+    document.body.appendChild(document.createElement('div'));
+
+    // Leading edge
+    await vi.advanceTimersByTimeAsync(0);
+    expect(callback).toHaveBeenCalledTimes(1);
+
+    // Trailing edge at 100ms
+    await vi.advanceTimersByTimeAsync(100);
+    expect(callback).toHaveBeenCalledTimes(2);
+    observer.disconnect();
+  });
+
+  it('observer can be disconnected without error', () => {
+    const common = loadCommon();
+    const observer = common.createObserver(vi.fn());
+    expect(() => observer.disconnect()).not.toThrow();
+  });
+
+  it('uses default throttle of 150ms', async () => {
+    vi.useFakeTimers();
+    const common = loadCommon();
+    const callback = vi.fn();
+    const observer = common.createObserver(callback);
+
+    document.body.appendChild(document.createElement('div'));
+    await vi.advanceTimersByTimeAsync(0); // leading edge
+    expect(callback).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(149); // not yet
+    expect(callback).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(1); // 150ms total — trailing edge
+    expect(callback).toHaveBeenCalledTimes(2);
+    observer.disconnect();
+  });
+
+  it('coalesces rapid mutations to exactly 2 calls (leading + trailing)', async () => {
+    vi.useFakeTimers();
+    const common = loadCommon();
+    const callback = vi.fn();
+    const observer = common.createObserver(callback, 100);
+
+    // 5 rapid mutations within the throttle window
+    for (let i = 0; i < 5; i++) {
+      document.body.appendChild(document.createElement('span'));
+    }
+
+    // Leading edge fires once
+    await vi.advanceTimersByTimeAsync(0);
+    expect(callback).toHaveBeenCalledTimes(1);
+
+    // Trailing edge fires once at 100ms — total exactly 2
+    await vi.advanceTimersByTimeAsync(100);
+    expect(callback).toHaveBeenCalledTimes(2);
+    observer.disconnect();
   });
 });

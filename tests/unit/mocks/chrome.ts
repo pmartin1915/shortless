@@ -15,7 +15,7 @@ export function createChromeMock() {
       onInstalled: { addListener: vi.fn() },
       onMessage: { addListener: vi.fn() },
       sendMessage: vi.fn(),
-      getManifest: vi.fn(() => ({ version: '1.1.2' })),
+      getManifest: vi.fn(() => ({ version: '1.1.3' })),
     },
     storage: {
       sync: {

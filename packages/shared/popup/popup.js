@@ -21,8 +21,8 @@
   function loadBlockCount() {
     var key = getTodayKey();
     chrome.storage.local.get(key, function (result) {
-      var count = result[key] || 0;
-      updateBlockCountDisplay(count);
+      if (chrome.runtime.lastError) return;
+      updateBlockCountDisplay(result[key] || 0);
     });
   }
 
@@ -72,10 +72,14 @@
   function setupStorageListener() {
     chrome.storage.onChanged.addListener(function (changes, areaName) {
       if (areaName === 'local') {
-        var key = getTodayKey();
-        if (changes[key]) {
-          var newCount = changes[key].newValue || 0;
-          updateBlockCountDisplay(newCount);
+        var keys = Object.keys(changes);
+        for (var i = 0; i < keys.length; i++) {
+          if (keys[i].indexOf('blocks_') === 0) {
+            // Re-fetch today's count rather than consuming the change value
+            // directly. Handles midnight rollover and stale-date re-queues.
+            loadBlockCount();
+            break;
+          }
         }
       }
     });
@@ -98,7 +102,7 @@
       var title = encodeURIComponent('Breakage Report — v' + version);
       var body = encodeURIComponent(
         '**Version:** ' + version + '\n' +
-        '**Browser:** ' + navigator.userAgent.split(' ').pop() + '\n' +
+        '**Browser:** ' + navigator.userAgent + '\n' +
         '**Platform:** \n' +
         '**URL (if applicable):** \n\n' +
         '**What leaked through?**\n\n'
@@ -109,11 +113,14 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-    setVersion();
-    loadPlatformStates();
-    loadBlockCount();
-    setupToggleHandlers();
-    setupStorageListener();
-    setupReportBreakage();
+    var inits = [setVersion, loadPlatformStates, loadBlockCount,
+                 setupToggleHandlers, setupStorageListener, setupReportBreakage];
+    for (var i = 0; i < inits.length; i++) {
+      try {
+        inits[i]();
+      } catch (e) {
+        console.error('[Shortless] Init error in ' + inits[i].name + ':', e);
+      }
+    }
   });
 })();

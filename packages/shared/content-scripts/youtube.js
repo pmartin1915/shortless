@@ -30,6 +30,11 @@
     'ytd-grid-video-renderer:has([overlay-style="SHORTS"])',
     'ytd-video-renderer:has([overlay-style="SHORTS"])'
   ];
+  // Localised text labels for Shorts chip-cloud chips.
+  // "Shorts" is YouTube's brand name (unchanged in most locales), but a few
+  // languages use a translated label when the chip has no child link.
+  var SHORTS_CHIP_TERMS = ['Shorts', 'Cortos', 'Curtas', '\u30B7\u30E7\u30FC\u30C8'];
+
   // Note: chip-cloud chips lack href/data attrs. Handled by hideChipsByText() below.
 
   // ---- Helpers --------------------------------------------------------------
@@ -78,9 +83,17 @@
         count++;
         continue;
       }
-      // Fallback: text match (covers locales where chip has no link)
+      // Fallback: text match (covers locales where chip has no link).
+      // Uses startsWith to tolerate injected badge text (e.g. "ShortsNew").
       var text = (chip.textContent || '').trim();
-      if (text === 'Shorts') {
+      var matched = false;
+      for (var j = 0; j < SHORTS_CHIP_TERMS.length; j++) {
+        if (text === SHORTS_CHIP_TERMS[j] || text.indexOf(SHORTS_CHIP_TERMS[j]) === 0) {
+          matched = true;
+          break;
+        }
+      }
+      if (matched) {
         chip.style.setProperty('display', 'none', 'important');
         chip.setAttribute('data-shortless-hidden', '');
         count++;
@@ -182,6 +195,6 @@
 
   // --- Test exports (no-op in browser content scripts) ---
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { redirectShorts, hideChipsByText, SHORTS_SELECTORS };
+    module.exports = { redirectShorts, hideChipsByText, SHORTS_SELECTORS, SHORTS_CHIP_TERMS };
   }
 })();
