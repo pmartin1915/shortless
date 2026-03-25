@@ -6,8 +6,9 @@ const archiver = require('archiver');
 // Run build first to ensure output is up to date
 execSync('node scripts/build.js firefox', { cwd: path.resolve(__dirname, '..'), stdio: 'inherit' });
 
+const pkg = require(path.resolve(__dirname, '..', 'package.json'));
 const src = path.resolve(__dirname, '..', 'packages', 'extension-firefox');
-const dest = path.resolve(__dirname, 'shortless-firefox-1.1.0.zip');
+const dest = path.resolve(__dirname, `shortless-firefox-${pkg.version}.zip`);
 
 if (fs.existsSync(dest)) fs.unlinkSync(dest);
 
