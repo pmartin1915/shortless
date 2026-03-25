@@ -221,6 +221,32 @@ describe('sendBlockCount()', () => {
     common.flushPendingCount();
     expect(sendMsg).not.toHaveBeenCalled();
   });
+
+  it('ignores zero then correctly sends subsequent positive count', () => {
+    vi.useFakeTimers();
+    const sendMsg = vi.fn();
+    chromeMock.runtime.sendMessage = sendMsg;
+    vi.stubGlobal('chrome', chromeMock);
+
+    const common = loadCommon();
+    common.sendBlockCount(0); // should be ignored
+    common.sendBlockCount(5);
+    vi.advanceTimersByTime(2000);
+    expect(sendMsg).toHaveBeenCalledOnce();
+    expect(sendMsg).toHaveBeenCalledWith({ type: 'BLOCK_COUNT_INCREMENT', count: 5 });
+  });
+
+  it('silently drops count when extension context is invalidated', () => {
+    vi.useFakeTimers();
+    const sendMsg = vi.fn(() => { throw new Error('Extension context invalidated'); });
+    chromeMock.runtime.sendMessage = sendMsg;
+    vi.stubGlobal('chrome', chromeMock);
+
+    const common = loadCommon();
+    common.sendBlockCount(3);
+    // Should not throw
+    expect(() => vi.advanceTimersByTime(2000)).not.toThrow();
+  });
 });
 
 // ---------------------------------------------------------------------------

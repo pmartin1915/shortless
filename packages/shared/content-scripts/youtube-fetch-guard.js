@@ -73,8 +73,10 @@
   }
 
   window.fetch = function (input, init) {
+    var originalArgs = arguments; // Cache for use inside promise chains
+
     if (!enabled) {
-      return originalFetch.apply(this, arguments);
+      return originalFetch.apply(this, originalArgs);
     }
 
     // Normalise the URL from either a Request object or a string.
@@ -89,12 +91,12 @@
 
     // Only inspect POSTs to the browse endpoint.
     if (url.indexOf('youtubei/v1/browse') === -1) {
-      return originalFetch.apply(this, arguments);
+      return originalFetch.apply(this, originalArgs);
     }
 
     var method = (init && init.method) || (input instanceof Request && input.method) || 'GET';
     if (method.toUpperCase() !== 'POST') {
-      return originalFetch.apply(this, arguments);
+      return originalFetch.apply(this, originalArgs);
     }
 
     // Extract body from init options, or from a Request object.
@@ -105,25 +107,26 @@
       if (isShortsRequest(body)) {
         return Promise.resolve(emptyBrowseResponse());
       }
-      return originalFetch.apply(this, arguments);
+      return originalFetch.apply(this, originalArgs);
     }
 
     // Handle Request objects with non-string bodies via clone().
-    // clone() preserves headers, credentials, and mode — avoids losing them.
+    // clone() reads the body without consuming the original — pass original args through.
     if (input instanceof Request && body && typeof body !== 'string') {
+      var self = this;
       try {
         var req = input.clone();
         return req.text().then(function (text) {
           if (isShortsRequest(text)) {
             return emptyBrowseResponse();
           }
-          // Re-create a fresh request since reading consumed the clone's body.
-          return originalFetch.call(this, new Request(input, init));
-        }.bind(this)).catch(function () {
-          return originalFetch.call(this, new Request(input, init));
-        }.bind(this));
+          // Original input is untouched — pass it directly.
+          return originalFetch.apply(self, originalArgs);
+        }).catch(function () {
+          return originalFetch.apply(self, originalArgs);
+        });
       } catch (e) {
-        return originalFetch.apply(this, arguments);
+        return originalFetch.apply(this, originalArgs);
       }
     }
 

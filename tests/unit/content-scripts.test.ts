@@ -185,6 +185,52 @@ describe('YouTube SHORTS_CHIP_TERMS', () => {
     const count = yt.hideChipsByText();
     expect(count).toBe(1);
   });
+
+  it('hides chips with Portuguese text "Curtas"', () => {
+    document.body.innerHTML = `
+      <yt-chip-cloud-chip-renderer>Curtas</yt-chip-cloud-chip-renderer>
+      <yt-chip-cloud-chip-renderer>Em alta</yt-chip-cloud-chip-renderer>
+    `;
+    const yt = loadWithCommon(YOUTUBE_PATH);
+    const count = yt.hideChipsByText();
+    expect(count).toBe(1);
+  });
+
+  it('hides chips with Japanese text "\u30B7\u30E7\u30FC\u30C8"', () => {
+    document.body.innerHTML = `
+      <yt-chip-cloud-chip-renderer>\u30B7\u30E7\u30FC\u30C8</yt-chip-cloud-chip-renderer>
+      <yt-chip-cloud-chip-renderer>\u97F3\u697D</yt-chip-cloud-chip-renderer>
+    `;
+    const yt = loadWithCommon(YOUTUBE_PATH);
+    const count = yt.hideChipsByText();
+    expect(count).toBe(1);
+  });
+
+  it('hides chips via startsWith when badge text is appended', () => {
+    document.body.innerHTML = `
+      <yt-chip-cloud-chip-renderer>Shorts<span class="badge">New</span></yt-chip-cloud-chip-renderer>
+    `;
+    const yt = loadWithCommon(YOUTUBE_PATH);
+    const count = yt.hideChipsByText();
+    expect(count).toBe(1);
+  });
+
+  it('marks innocent chips as checked and skips them on re-scan', () => {
+    document.body.innerHTML = `
+      <yt-chip-cloud-chip-renderer>Music</yt-chip-cloud-chip-renderer>
+      <yt-chip-cloud-chip-renderer>Gaming</yt-chip-cloud-chip-renderer>
+    `;
+    const yt = loadWithCommon(YOUTUBE_PATH);
+    yt.hideChipsByText();
+
+    // Both innocent chips should be marked as checked
+    const checked = document.querySelectorAll('[data-shortless-checked]');
+    expect(checked.length).toBe(2);
+
+    // Second scan should find 0 new chips (all marked)
+    const count = yt.hideChipsByText();
+    expect(count).toBe(0);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -289,8 +335,8 @@ describe('Snapchat redirectSpotlight()', () => {
 // Snapchat — SPOTLIGHT_SELECTORS
 // ---------------------------------------------------------------------------
 describe('Snapchat SPOTLIGHT_SELECTORS', () => {
-  it('exports 2 selectors', () => {
+  it('exports 3 selectors', () => {
     const sc = loadWithCommon(SNAPCHAT_PATH);
-    expect(sc.SPOTLIGHT_SELECTORS).toHaveLength(2);
+    expect(sc.SPOTLIGHT_SELECTORS).toHaveLength(3);
   });
 });

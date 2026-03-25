@@ -143,7 +143,7 @@ function _flushBlockCount() {
   chrome.storage.local.get(key, (data) => {
     if (chrome.runtime.lastError) {
       console.error('[Shortless] Failed to read block count:', chrome.runtime.lastError);
-      _pendingIncrement += toAdd; // re-queue on failure
+      _pendingIncrement = Math.min(_pendingIncrement + toAdd, 100000); // cap to prevent unbounded growth
       _flushInProgress = false;
       return;
     }
@@ -152,7 +152,7 @@ function _flushBlockCount() {
     chrome.storage.local.set({ [key]: updated }, () => {
       if (chrome.runtime.lastError) {
         console.error('[Shortless] Failed to save block count:', chrome.runtime.lastError);
-        _pendingIncrement += toAdd; // re-queue on failure
+        _pendingIncrement = Math.min(_pendingIncrement + toAdd, 100000); // cap to prevent unbounded growth
         _flushInProgress = false;
         return;
       }

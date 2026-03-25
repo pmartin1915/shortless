@@ -1,17 +1,17 @@
 # STATE.md — Shortless
 
-**Last updated:** 2026-03-24
-**Version:** 1.1.3
+**Last updated:** 2026-03-25
+**Version:** 1.1.4
 **Branch:** master
 
 ## Current Status
 
-- Chrome extension v1.1.1 — CWS under review (v1.1.3 ready locally)
-- Firefox extension v1.1.1 — AMO under review (v1.1.3 ready locally)
-- iOS companion app v2.1.0 — App Store under review
+- Chrome extension v1.1.1 — CWS under review (v1.1.4 ready locally)
+- Firefox extension v1.1.1 — AMO under review (v1.1.4 ready locally)
+- iOS companion app v2.1.0 — App Store review (Information Needed response sent)
 - iOS companion app v3.0.0 — code complete, awaiting portal setup
 - 10 Playwright test specs (5 offline, 5 network) — 43 offline + 9 network assertions
-- 4 Vitest unit test specs — 100 assertions
+- 4 Vitest unit test specs — 109 assertions
 
 ## What's Done
 
@@ -51,6 +51,14 @@
   - Robustness: Chip text match uses `startsWith` to tolerate injected badge text
   - Tests: 6 createObserver tests (incl. coalescing invariant), 6 sendBlockCount debounce tests, 2 i18n chip tests
   - Total: 103 Vitest assertions (up from 91), 43 Playwright offline assertions
+- v1.1.4: Gemini 3 Pro Preview full audit (Opus 4.6 + Gemini 3 Pro Preview codereview)
+  - Performance: `hideChipsByText()` marks innocent chips with `data-shortless-checked` (skip on re-scan)
+  - Bug fix: Fetch guard caches `originalArgs` — passes original untouched Request instead of reconstructing
+  - Resilience: `_pendingIncrement` capped at 100,000 on storage failure (prevents unbounded memory growth)
+  - Robustness: Instagram `collapseParentListItems` now includes `[data-testid="reels-tab"]` selector
+  - Robustness: Snapchat selector split into exact `/spotlight` + prefix `/spotlight/` (no false positives)
+  - Tests: 5 new tests (Portuguese + Japanese chip i18n, badge injection, checked optimization, context invalidation)
+  - Total: 109 Vitest assertions (up from 103), 43 Playwright offline assertions
 
 ## What's Next
 

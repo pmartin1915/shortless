@@ -50,7 +50,9 @@
    */
   function collapseParentListItems() {
     var navLinks = document.querySelectorAll(
-      'a[href="/reels/"][data-shortless-hidden], a[href^="/reels/"][data-shortless-hidden]'
+      'a[href="/reels/"][data-shortless-hidden], ' +
+      'a[href^="/reels/"][data-shortless-hidden], ' +
+      '[data-testid="reels-tab"][data-shortless-hidden]'
     );
 
     for (var i = 0; i < navLinks.length; i++) {

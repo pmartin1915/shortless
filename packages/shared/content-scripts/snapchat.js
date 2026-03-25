@@ -19,7 +19,8 @@
 
   // ---- Selectors (mirrors snapchat-hide.css) --------------------------------
   var SPOTLIGHT_SELECTORS = [
-    'a[href^="/spotlight"]',
+    'a[href="/spotlight"]',
+    'a[href^="/spotlight/"]',
     '[data-testid="spotlight-tab"]'
   ];
 

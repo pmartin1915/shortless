@@ -71,7 +71,7 @@
   function hideChipsByText() {
     var count = 0;
     var chips = document.querySelectorAll(
-      'yt-chip-cloud-chip-renderer:not([data-shortless-hidden])'
+      'yt-chip-cloud-chip-renderer:not([data-shortless-hidden]):not([data-shortless-checked])'
     );
     for (var i = 0; i < chips.length; i++) {
       var chip = chips[i];
@@ -97,6 +97,9 @@
         chip.style.setProperty('display', 'none', 'important');
         chip.setAttribute('data-shortless-hidden', '');
         count++;
+      } else {
+        // Mark innocent chip so we skip it on future mutations
+        chip.setAttribute('data-shortless-checked', 'true');
       }
     }
     return count;
