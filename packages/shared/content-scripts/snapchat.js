@@ -33,7 +33,7 @@
    */
   function redirectSpotlight() {
     var path = window.location.pathname;
-    if (path.startsWith('/spotlight')) {
+    if (path === '/spotlight' || path.startsWith('/spotlight/')) {
       window.location.replace('https://www.snapchat.com/');
       return true;
     }

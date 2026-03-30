@@ -37,5 +37,19 @@
       "urlFilter": "||instagram.com/api/v1/clips/",
       "resourceTypes": ["xmlhttprequest"]
     }
+  },
+  {
+    "id": 104,
+    "priority": 1,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "url": "https://www.instagram.com/"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://(?:www\\.)?instagram\\.com/reels$",
+      "resourceTypes": ["main_frame"]
+    }
   }
 ]

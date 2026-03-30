@@ -18,8 +18,8 @@
 
   // Generate an auth token to prevent page scripts from spoofing toggle events.
   // The ISOLATED world content script reads this from the DOM and includes it.
-  var _authToken = Array.from(crypto.getRandomValues(new Uint8Array(8)), function (b) {
-    return b.toString(36);
+  var _authToken = Array.from(crypto.getRandomValues(new Uint8Array(16)), function (b) {
+    return b.toString(16).padStart(2, '0');
   }).join('');
   try {
     var meta = document.createElement('meta');
@@ -130,18 +130,10 @@
       }
     }
 
-    // Handle non-string bodies (Blob, ArrayBuffer) when input is a URL string.
-    if (body && typeof body.text === 'function') {
-      return body.text().then(function (text) {
-        if (isShortsRequest(text)) {
-          return emptyBrowseResponse();
-        }
-        var newInit = Object.assign({}, init, { body: text });
-        return originalFetch.call(this, input, newInit);
-      }.bind(this));
-    }
-
-    return originalFetch.apply(this, arguments);
+    // Non-string bodies (Blob, ArrayBuffer, ReadableStream) are never Shorts
+    // browse requests — YouTube always sends JSON strings.  Pass through
+    // without consuming the body stream.
+    return originalFetch.apply(this, originalArgs);
   };
 
   // --- Test exports (no-op in browser MAIN world scripts) ---

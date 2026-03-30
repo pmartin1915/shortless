@@ -1,17 +1,17 @@
 # STATE.md — Shortless
 
 **Last updated:** 2026-03-25
-**Version:** 1.1.4
+**Version:** 1.1.5
 **Branch:** master
 
 ## Current Status
 
-- Chrome extension v1.1.1 — CWS under review (v1.1.4 ready locally)
-- Firefox extension v1.1.1 — AMO under review (v1.1.4 ready locally)
+- Chrome extension v1.1.1 — CWS under review (v1.1.5 ready locally)
+- Firefox extension v1.1.4 — AMO under review (v1.1.5 ready locally)
 - iOS companion app v2.1.0 — App Store review (Information Needed response sent)
 - iOS companion app v3.0.0 — code complete, awaiting portal setup
 - 10 Playwright test specs (5 offline, 5 network) — 43 offline + 9 network assertions
-- 4 Vitest unit test specs — 109 assertions
+- 4 Vitest unit test specs — 118 assertions
 
 ## What's Done
 
@@ -59,6 +59,16 @@
   - Robustness: Snapchat selector split into exact `/spotlight` + prefix `/spotlight/` (no false positives)
   - Tests: 5 new tests (Portuguese + Japanese chip i18n, badge injection, checked optimization, context invalidation)
   - Total: 109 Vitest assertions (up from 103), 43 Playwright offline assertions
+- v1.1.5: Gemini 3 Pro Preview audit hardening sprint (Opus 4.6 + Gemini 3 Pro Preview codereview)
+  - Bug fix: Fetch guard non-string body passthrough — removed destructive `body.text()` reconstruction that changed body type from Blob to string
+  - Performance: `createObserver()` disconnect clears trailing-edge timeout — prevents ghost callbacks on detached DOM
+  - Robustness: Snapchat `redirectSpotlight()` tightened from `startsWith('/spotlight')` to exact + prefix match (no false positives on `/spotlightshow`)
+  - Coverage: Instagram `/reels` (no trailing slash) blocked at all 3 layers — L1 DNR rule 104, L2 CSS `a[href="/reels"]`, L3 selector + redirect
+  - Maintenance: `cleanupOldBlockKeys()` removes block count keys older than 30 days on install/update (prevents unbounded storage growth)
+  - Security: Auth token upgraded from base-36 (8 bytes, ~41 bits) to hex (16 bytes, 128 bits)
+  - Readability: YouTube chip text matching uses `startsWith()` instead of `indexOf()===0`
+  - Tests: 9 new tests (observer disconnect x2, Snapchat false-positive x2, Instagram /reels, storage cleanup x4)
+  - Total: 118 Vitest assertions (up from 109), 43 Playwright offline assertions
 
 ## What's Next
 

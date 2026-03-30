@@ -43,6 +43,7 @@ chrome.runtime.onInstalled.addListener((details) => {
   if (typeof chrome.action.setBadgeTextColor === 'function') {
     chrome.action.setBadgeTextColor({ color: '#FFFFFF' });
   }
+  cleanupOldBlockKeys();
   updateBadge();
 });
 
@@ -177,6 +178,32 @@ function getBlockCount() {
   });
 }
 
+// --- Storage Cleanup ---
+
+/**
+ * Remove block count keys older than 30 days to prevent unbounded
+ * storage growth.  Called on install/update.
+ */
+function cleanupOldBlockKeys() {
+  chrome.storage.local.get(null, (data) => {
+    if (chrome.runtime.lastError || !data) return;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    const keysToRemove = [];
+    for (const key of Object.keys(data)) {
+      if (!key.startsWith('blocks_')) continue;
+      const dateStr = key.slice(7); // "YYYY-MM-DD"
+      const d = new Date(dateStr + 'T00:00:00');
+      if (!isNaN(d.getTime()) && d < cutoff) {
+        keysToRemove.push(key);
+      }
+    }
+    if (keysToRemove.length > 0) {
+      chrome.storage.local.remove(keysToRemove);
+    }
+  });
+}
+
 // --- Badge ---
 
 function updateBadge(count) {
@@ -200,6 +227,6 @@ updateBadge();
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     getTodayKey, handleToggle, incrementBlockCount, _flushBlockCount,
-    getBlockCount, updateBadge, setBadgeText, PLATFORMS, RULESET_MAP
+    getBlockCount, updateBadge, setBadgeText, cleanupOldBlockKeys, PLATFORMS, RULESET_MAP
   };
 }

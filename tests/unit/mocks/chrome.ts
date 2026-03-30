@@ -42,11 +42,20 @@ export function createChromeMock() {
         }),
       },
       local: {
-        get: vi.fn((key: string, cb: (result: Record<string, any>) => void) => {
-          cb({ [key]: localStorage[key] });
+        get: vi.fn((key: string | null, cb: (result: Record<string, any>) => void) => {
+          if (key === null) {
+            cb({ ...localStorage });
+          } else {
+            cb({ [key]: localStorage[key] });
+          }
         }),
         set: vi.fn((items: Record<string, any>, cb?: () => void) => {
           Object.assign(localStorage, items);
+          cb?.();
+        }),
+        remove: vi.fn((keys: string | string[], cb?: () => void) => {
+          const keyList = Array.isArray(keys) ? keys : [keys];
+          keyList.forEach(k => delete localStorage[k]);
           cb?.();
         }),
       },

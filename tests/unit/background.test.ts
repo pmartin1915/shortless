@@ -401,6 +401,64 @@ describe('onMessage handler', () => {
 });
 
 // ---------------------------------------------------------------------------
+// cleanupOldBlockKeys()
+// ---------------------------------------------------------------------------
+describe('cleanupOldBlockKeys()', () => {
+  it('removes keys older than 30 days', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-03-22T12:00:00'));
+
+    // 31 days ago
+    chromeMock._localStorage['blocks_2026-02-19'] = 42;
+    // 60 days ago
+    chromeMock._localStorage['blocks_2026-01-21'] = 10;
+    // Today (should keep)
+    chromeMock._localStorage['blocks_2026-03-22'] = 5;
+
+    const bg = loadBackground();
+    bg.cleanupOldBlockKeys();
+
+    expect(chromeMock._localStorage['blocks_2026-02-19']).toBeUndefined();
+    expect(chromeMock._localStorage['blocks_2026-01-21']).toBeUndefined();
+    expect(chromeMock._localStorage['blocks_2026-03-22']).toBe(5);
+  });
+
+  it('keeps keys from the last 30 days', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-03-22T12:00:00'));
+
+    // 29 days ago (within 30-day window)
+    chromeMock._localStorage['blocks_2026-02-21'] = 7;
+    // Today
+    chromeMock._localStorage['blocks_2026-03-22'] = 3;
+
+    const bg = loadBackground();
+    bg.cleanupOldBlockKeys();
+
+    expect(chromeMock._localStorage['blocks_2026-02-21']).toBe(7);
+    expect(chromeMock._localStorage['blocks_2026-03-22']).toBe(3);
+  });
+
+  it('ignores non-block keys in storage', () => {
+    chromeMock._localStorage['some_other_key'] = 'value';
+    chromeMock._localStorage['blocks_2020-01-01'] = 99;
+
+    const bg = loadBackground();
+    bg.cleanupOldBlockKeys();
+
+    // Non-block keys should be untouched
+    expect(chromeMock._localStorage['some_other_key']).toBe('value');
+    // Old block key should be removed
+    expect(chromeMock._localStorage['blocks_2020-01-01']).toBeUndefined();
+  });
+
+  it('handles empty storage gracefully', () => {
+    const bg = loadBackground();
+    expect(() => bg.cleanupOldBlockKeys()).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 describe('constants', () => {

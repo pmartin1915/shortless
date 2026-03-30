@@ -21,6 +21,7 @@
   // ---- Selectors (mirrors instagram-hide.css, plus menu-item variant) -------
   // All selectors use href/attribute-based matching for i18n safety.
   var REELS_SELECTORS = [
+    'a[href="/reels"]',
     'a[href="/reels/"]',
     'a[href^="/reels/"]',
     '[data-testid="reels-tab"]',
@@ -37,7 +38,7 @@
    */
   function redirectReels() {
     var path = window.location.pathname;
-    if (path.startsWith('/reels/') || path.startsWith('/reel/')) {
+    if (path === '/reels' || path.startsWith('/reels/') || path.startsWith('/reel/')) {
       window.location.replace('https://www.instagram.com/');
       return true;
     }
@@ -50,6 +51,7 @@
    */
   function collapseParentListItems() {
     var navLinks = document.querySelectorAll(
+      'a[href="/reels"][data-shortless-hidden], ' +
       'a[href="/reels/"][data-shortless-hidden], ' +
       'a[href^="/reels/"][data-shortless-hidden], ' +
       '[data-testid="reels-tab"][data-shortless-hidden]'

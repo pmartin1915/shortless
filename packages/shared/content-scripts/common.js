@@ -23,12 +23,14 @@
     if (throttleMs === undefined) throttleMs = 150;
 
     var isScheduled = false;
+    var trailingTimer = null;
     var observer = new MutationObserver(function () {
       observer.takeRecords(); // Clear queue to prevent MutationRecord memory buildup
       if (!isScheduled) {
         isScheduled = true;
         callback(); // Leading edge: fire immediately on first mutation
-        setTimeout(function () {
+        trailingTimer = setTimeout(function () {
+          trailingTimer = null;
           isScheduled = false;
           callback(); // Trailing edge: catch mutations during the throttle window
         }, throttleMs);
@@ -46,6 +48,18 @@
       }
     }
     attach();
+
+    // Clear pending trailing-edge timer on disconnect to prevent
+    // ghost callbacks after the observer is destroyed.
+    var originalDisconnect = observer.disconnect.bind(observer);
+    observer.disconnect = function () {
+      if (trailingTimer !== null) {
+        clearTimeout(trailingTimer);
+        trailingTimer = null;
+      }
+      isScheduled = false;
+      originalDisconnect();
+    };
 
     return observer;
   }

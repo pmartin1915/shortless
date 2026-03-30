@@ -432,6 +432,33 @@ describe('createObserver()', () => {
     observer.disconnect();
   });
 
+  it('disconnect clears pending trailing-edge timeout', async () => {
+    vi.useFakeTimers();
+    const common = loadCommon();
+    const callback = vi.fn();
+    const observer = common.createObserver(callback, 100);
+
+    document.body.appendChild(document.createElement('div'));
+
+    // Leading edge fires
+    await vi.advanceTimersByTimeAsync(0);
+    expect(callback).toHaveBeenCalledTimes(1);
+
+    // Disconnect before trailing edge fires
+    observer.disconnect();
+
+    // Advance past the throttle window — trailing should NOT fire
+    await vi.advanceTimersByTimeAsync(100);
+    expect(callback).toHaveBeenCalledTimes(1);
+  });
+
+  it('disconnect is idempotent (can be called twice)', () => {
+    const common = loadCommon();
+    const observer = common.createObserver(vi.fn());
+    observer.disconnect();
+    expect(() => observer.disconnect()).not.toThrow();
+  });
+
   it('coalesces rapid mutations to exactly 2 calls (leading + trailing)', async () => {
     vi.useFakeTimers();
     const common = loadCommon();

@@ -164,19 +164,19 @@ describe('fetch interception', () => {
     expect(body).toEqual({ responseContext: {}, contents: {} });
   });
 
-  it('handles Blob body asynchronously', async () => {
+  it('passes Blob body through untouched (non-string bodies are never Shorts)', async () => {
     loadGuard();
     const blob = new Blob([JSON.stringify({ browseId: 'FEshorts' })], {
       type: 'application/json',
     });
-    const resp = await window.fetch('https://www.youtube.com/youtubei/v1/browse', {
+    await window.fetch('https://www.youtube.com/youtubei/v1/browse', {
       method: 'POST',
       body: blob,
     });
 
-    expect(fakeFetch).not.toHaveBeenCalled();
-    const body = await resp.json();
-    expect(body).toEqual({ responseContext: {}, contents: {} });
+    // Non-string bodies pass through without inspection — YouTube always
+    // sends JSON strings for browse requests.
+    expect(fakeFetch).toHaveBeenCalled();
   });
 
   it('passes through when enabled=false (toggle off)', async () => {

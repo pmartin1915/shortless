@@ -3,7 +3,12 @@
  * Injected before first paint to prevent Reels content from flickering.
  */
 
-/* Reels navigation link */
+/* Reels navigation link (exact path without trailing slash) */
+a[href="/reels"] {
+  display: none !important;
+}
+
+/* Reels navigation link (with trailing slash) */
 a[href="/reels/"] {
   display: none !important;
 }
@@ -29,8 +34,10 @@ article:has(a[href*="/reel/"]) {
 }
 
 /* Hide parent list items that wrap a Reels nav link to avoid empty gaps */
+li:has(> a[href="/reels"]),
 li:has(> a[href="/reels/"]),
 li:has(> a[href^="/reels/"]),
+[role="listitem"]:has(> a[href="/reels"]),
 [role="listitem"]:has(> a[href="/reels/"]),
 [role="listitem"]:has(> a[href^="/reels/"]) {
   display: none !important;

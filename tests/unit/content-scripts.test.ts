@@ -256,6 +256,14 @@ describe('Instagram redirectReels()', () => {
     const ig = loadWithCommon(INSTAGRAM_PATH);
     expect(ig.redirectReels()).toBe(false);
   });
+
+  it('redirects /reels (no trailing slash) to Instagram home', () => {
+    (window.location as any).pathname = '/reels';
+    const ig = loadWithCommon(INSTAGRAM_PATH);
+    const result = ig.redirectReels();
+    expect(result).toBe(true);
+    expect(window.location.replace).toHaveBeenCalledWith('https://www.instagram.com/');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -300,9 +308,9 @@ describe('Instagram collapseParentListItems()', () => {
 // Instagram — REELS_SELECTORS
 // ---------------------------------------------------------------------------
 describe('Instagram REELS_SELECTORS', () => {
-  it('exports 5 selectors', () => {
+  it('exports 6 selectors', () => {
     const ig = loadWithCommon(INSTAGRAM_PATH);
-    expect(ig.REELS_SELECTORS).toHaveLength(5);
+    expect(ig.REELS_SELECTORS).toHaveLength(6);
   });
 });
 
@@ -328,6 +336,20 @@ describe('Snapchat redirectSpotlight()', () => {
     (window.location as any).pathname = '/stories';
     const sc = loadWithCommon(SNAPCHAT_PATH);
     expect(sc.redirectSpotlight()).toBe(false);
+  });
+
+  it('does NOT redirect /spotlightshow (unrelated path)', () => {
+    (window.location as any).pathname = '/spotlightshow';
+    const sc = loadWithCommon(SNAPCHAT_PATH);
+    expect(sc.redirectSpotlight()).toBe(false);
+    expect(window.location.replace).not.toHaveBeenCalled();
+  });
+
+  it('does NOT redirect /spotlight-creator (unrelated path)', () => {
+    (window.location as any).pathname = '/spotlight-creator';
+    const sc = loadWithCommon(SNAPCHAT_PATH);
+    expect(sc.redirectSpotlight()).toBe(false);
+    expect(window.location.replace).not.toHaveBeenCalled();
   });
 });
 

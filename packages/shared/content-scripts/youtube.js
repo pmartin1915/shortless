@@ -88,7 +88,7 @@
       var text = (chip.textContent || '').trim();
       var matched = false;
       for (var j = 0; j < SHORTS_CHIP_TERMS.length; j++) {
-        if (text === SHORTS_CHIP_TERMS[j] || text.indexOf(SHORTS_CHIP_TERMS[j]) === 0) {
+        if (text.startsWith(SHORTS_CHIP_TERMS[j])) {
           matched = true;
           break;
         }
